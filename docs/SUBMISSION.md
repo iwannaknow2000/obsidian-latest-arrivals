@@ -194,3 +194,33 @@
 
 回到 <https://community.obsidian.md> 的插件页面，点 **Check for new releases**。
 目录会拉取最新的 Release 与默认分支状态，重新跑一遍检查。
+
+### 第二轮（审核 1.3.2/1.3.3）与第三轮（1.3.4）
+
+第二轮多出了 **SOURCE CODE** 段——目录在源码上跑的 lint 比我们本地的严：
+
+| 项目 | 结果 | 处理 |
+|---|---|---|
+| README 无英文内容 | ⚠️ Warning | ✅ `v1.3.1`：README 重写为英文 |
+| 缺构建来源证明 | 🟡 建议 | ✅ `v1.3.1`：CI 加 `attest-build-provenance@v2`，审核已转为 **Pass** |
+| `src/format.ts` 5 条 `no-unsafe-*` | 🟡 建议×5 | ✅ `v1.3.2`：根因是 `obsidian.d.ts` 的 `moment` 类型因 `skipLibCheck` 退化成 `any`。改为不使用 moment（相对时间改用 `Intl.RelativeTimeFormat`） |
+| `builtin-modules` 依赖 | ⚠️ Warning | ✅ `v1.3.2`：改用 Node 内置的 `node:module` |
+| `setDynamicTooltip` 弃用 ×2 | 🟡 建议 | ✅ `v1.3.4`：数值已恒显示，直接删除调用 |
+| `setWarning` 弃用 | 🟡 建议 | ✅ `v1.3.4`：改用公开的 `setClass("mod-warning")` |
+| Clipboard Access | 🟡 建议 | ✅ `v1.3.4`：移除复制菜单项，插件不再触碰剪贴板 |
+| `display` 弃用 ×6 + `getSettingDefinitions` 未实现 | ⚠️ Warning + 🟡 建议 | 🟡 **有意保留**：替代 API 是 1.13.0 才有的，改用会要求 `minAppVersion >= 1.13.0`，把所有更老的用户挡在门外。同一取舍的两个表现 |
+| Vault Enumeration | 🟡 建议 | 🟡 **无法规避**：要算出「哪些笔记是新来的」就必须遍历 vault |
+
+**关键教训：本地 lint 必须与目录用同一套规则。**
+
+我们最初用 `tseslint.configs.recommended`（非类型检查版），而目录用类型检查版，
+导致 `no-unsafe-*` 在本地完全不可见。已改为 `recommendedTypeChecked`，
+并去掉针对 `settings.ts` 的 `no-deprecated` 关闭项。现在：
+
+```
+npm run lint  →  0 error / 7 warning
+目录审核      →  0 error / 同一批（同一根因展开）
+```
+
+> 没有任何 error，不阻塞上架。官方文档：
+> "won't be installable … until any **errors** from the automated review are resolved."
