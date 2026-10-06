@@ -417,3 +417,123 @@
   color: var(--text-faint);
   line-height: 1.6;
 }
+
+/* -------------------------------------------------- 文件夹多选器 ---- */
+.la-folder-modal .modal-content {
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.la-picker-bulk {
+  display: flex;
+  gap: 8px;
+}
+
+.la-picker-bulk-btn {
+  flex: 1;
+  height: 34px;
+  font-size: 0.82em;
+}
+
+.la-picker-list {
+  flex: 1;
+  min-height: 180px;
+  max-height: 52vh;
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--la-radius);
+  background: var(--background-secondary);
+  padding: 4px;
+}
+
+.la-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border-radius: var(--la-radius);
+  cursor: pointer;
+}
+
+.la-picker-row:hover {
+  background: var(--background-modifier-hover);
+}
+
+.la-picker-row.is-checked {
+  background: var(--background-modifier-active-hover, var(--background-modifier-hover));
+}
+
+.la-picker-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.la-picker-icon {
+  flex-shrink: 0;
+  display: flex;
+  color: var(--text-muted);
+}
+
+.la-picker-icon .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.la-picker-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.la-picker-name {
+  font-size: 0.92em;
+  color: var(--text-normal);
+}
+
+.la-picker-path {
+  font-size: 0.74em;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.la-picker-footer {
+  border-top: none;
+  padding-top: 0;
+}
+
+.la-picker-footer .setting-item-info {
+  display: none;
+}
+
+.la-picker-footer .setting-item-control {
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.la-picker-footer button {
+  min-height: 38px;
+}
+
+.la-folders-summary {
+  margin: -4px 0 10px;
+  padding: 8px 12px;
+  border-radius: var(--la-radius);
+  background: var(--background-secondary);
+  font-size: 0.8em;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.la-folders-summary.is-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.is-mobile .la-picker-row {
+  min-height: 52px;
+}

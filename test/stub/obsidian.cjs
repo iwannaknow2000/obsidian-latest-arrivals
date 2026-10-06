@@ -129,6 +129,17 @@ class Modal extends Component {
   }
 }
 
+class SuggestModal extends Modal {
+  constructor(app) { super(app); this.items = []; }
+  setPlaceholder() { return this; }
+  getItems() { return this.items; }
+  getItemText(item) { return String(item); }
+  onChooseItem() {}
+  open() { this.onOpen(); }
+}
+
+class FuzzySuggestModal extends SuggestModal {}
+
 class PluginSettingTab extends Component {
   constructor(app, plugin) {
     super();
@@ -230,6 +241,8 @@ module.exports = {
   Plugin,
   ItemView,
   Modal,
+  SuggestModal,
+  FuzzySuggestModal,
   PluginSettingTab,
   Setting,
   Notice,

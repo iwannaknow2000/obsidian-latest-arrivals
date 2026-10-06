@@ -52,11 +52,35 @@ export function globToRegExp(pattern: string): RegExp | null {
   }
 }
 
-export function buildExcludeMatchers(text: string): RegExp[] {
-  return text
+/**
+ * 把「被排除的文件夹」编译成一条精确的正则。
+ *
+ * 用 `^` 锚定前缀而不是复用 glob：`Archive` 不应误伤 `MyArchive/`，
+ * 但必须覆盖它下面任意层级的所有文件。
+ */
+export function folderToRegExp(folder: string): RegExp | null {
+  const trimmed = folder.trim().replace(/^\/+|\/+$/g, "");
+  if (!trimmed) return null;
+  const escaped = trimmed.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  try {
+    return new RegExp(`^${escaped}/`, "i");
+  } catch {
+    return null;
+  }
+}
+
+export function buildExcludeMatchers(
+  text: string,
+  folders: readonly string[] = [],
+): RegExp[] {
+  const fromFolders = folders
+    .map((folder) => folderToRegExp(folder))
+    .filter((r): r is RegExp => r !== null);
+  const fromText = text
     .split(/\r?\n/)
     .map((line) => globToRegExp(line))
     .filter((r): r is RegExp => r !== null);
+  return [...fromFolders, ...fromText];
 }
 
 export function isExcluded(

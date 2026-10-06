@@ -42,7 +42,14 @@ export interface LatestArrivalsSettings {
    * （该文件不被 Syncthing 同步），之后一点图标即可切换。
    */
   sidebarSide: SidebarSide;
-  /** 排除路径的正则，每行一条 */
+  /**
+   * 排除的文件夹（vault 相对路径）。
+   *
+   * 与 `excludePatterns` 的分工：这里是**勾选**出来的，精确表示「整个文件夹都不看」；
+   * `excludePatterns` 留给需要通配符的高级用法。
+   */
+  excludedFolders: string[];
+  /** 额外排除规则，每行一条 glob（支持 * 和 ?） */
   excludePatterns: string;
   /** 从「最新入库」中手动忽略的路径 */
   ignoredPaths: string[];
@@ -59,6 +66,7 @@ export const DEFAULT_SETTINGS: LatestArrivalsSettings = {
   rescanOnForeground: true,
   openIn: "current",
   sidebarSide: "left",
+  excludedFolders: [],
   excludePatterns: "",
   ignoredPaths: [],
 };

@@ -4,6 +4,7 @@ import { detectPinyinSupport } from "./pinyin";
 import { formatBytes, formatDateTime } from "./format";
 import { LOCALES, t, type LanguageSetting } from "./i18n";
 import { SORT_KEYS, type SortKey } from "./types";
+import { pickFolders } from "./ui/folder-picker";
 
 /** 用 Setting#setHeading 代替手写 h2/h3，保证与 Obsidian 其他设置页样式一致 */
 function heading(containerEl: HTMLElement, text: string): void {
@@ -160,16 +161,46 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
         );
     }
 
+    // 排除文件夹：勾选式，主力用法
+    const folders = this.plugin.settings.excludedFolders;
     new Setting(containerEl)
-      .setName(t("settings.exclude.name"))
-      .setDesc(t("settings.exclude.desc"))
+      .setName(t("settings.folders.name"))
+      .setDesc(t("settings.folders.desc"))
+      .addButton((b) =>
+        b.setButtonText(t("settings.folders.button")).onClick(() => {
+          pickFolders(this.app, this.plugin.settings.excludedFolders, (picked) => {
+            void (async () => {
+              this.plugin.settings.excludedFolders = picked;
+              await this.plugin.persistSettings();
+              await this.plugin.refresh(false);
+              this.display();
+            })();
+          });
+        }),
+      );
+
+    containerEl.createDiv({
+      cls: "la-folders-summary" + (folders.length === 0 ? " is-empty" : ""),
+      text:
+        folders.length === 0
+          ? t("settings.folders.none")
+          : t("settings.folders.summary", {
+              count: folders.length,
+              list: folders.join("、"),
+            }),
+    });
+
+    // 额外排除规则：留给需要通配符的高级用法
+    new Setting(containerEl)
+      .setName(t("settings.patterns.name"))
+      .setDesc(t("settings.patterns.desc"))
       .addTextArea((area) => {
         area.setValue(this.plugin.settings.excludePatterns).onChange(async (v) => {
           this.plugin.settings.excludePatterns = v;
           await this.plugin.persistSettings();
           void this.plugin.refresh(false);
         });
-        area.inputEl.rows = 4;
+        area.inputEl.rows = 3;
       });
 
     // ------------------------------------------------------------------
@@ -218,6 +249,29 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
             await this.plugin.refresh(false);
             this.display();
           }),
+      );
+
+    // ------------------------------------------------------------------
+    // 配置备份
+    // ------------------------------------------------------------------
+    heading(containerEl, t("settings.sectionBackup"));
+
+    new Setting(containerEl)
+      .setName(t("settings.export.name"))
+      .setDesc(t("settings.export.desc"))
+      .addButton((b) =>
+        b.setButtonText(t("settings.export.button")).onClick(() => {
+          void this.plugin.exportSettings();
+        }),
+      );
+
+    new Setting(containerEl)
+      .setName(t("settings.import.name"))
+      .setDesc(t("settings.import.desc"))
+      .addButton((b) =>
+        b.setButtonText(t("settings.import.button")).onClick(() => {
+          this.plugin.openImportPicker(() => this.display());
+        }),
       );
 
     this.renderDiagnostics(containerEl);

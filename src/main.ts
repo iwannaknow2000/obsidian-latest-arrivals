@@ -4,6 +4,12 @@ import { ArrivalsService } from "./service";
 import { LatestArrivalsSettingTab } from "./settings";
 import { LatestArrivalsModal } from "./ui/modal";
 import { LATEST_ARRIVALS_VIEW, LatestArrivalsView } from "./ui/view";
+import {
+  exportWithNotice,
+  parseSettingsFile,
+  readVaultFile,
+  SettingsImportModal,
+} from "./settings-io";
 import { applyLanguage, isLanguageSetting, t, type LanguageSetting } from "./i18n";
 import {
   DEFAULT_SETTINGS,
@@ -16,25 +22,38 @@ import {
 /** 文件事件聚合窗口：vault 事件可能成串触发，避免每个文件都跑一次全库对账 */
 const EVENT_DEBOUNCE_MS = 2000;
 
+/**
+ * 设置的设备本地备份。
+ *
+ * 设置的主存储是插件目录里的 `data.json`（Obsidian 的规范做法），
+ * 但那个文件躺在插件文件夹里 —— 用户手动「删掉旧文件夹再拷新的」时
+ * 会连它一起删掉，辛苦配好的排除路径、排序偏好就全没了。
+ * 所以在设备本地存储里再留一份，`data.json` 缺失时自动恢复。
+ */
+const SETTINGS_BACKUP_KEY = "settings-backup-v1";
+
 export default class LatestArrivalsPlugin extends Plugin {
   settings: LatestArrivalsSettings = { ...DEFAULT_SETTINGS };
   ledger!: ArrivalLedger;
   service!: ArrivalsService;
 
+  private localStore!: LocalStore;
   private eventTimer: number | null = null;
+  /** 本次启动是否从设备本地备份恢复了设置（用于给用户一个提示） */
+  private restoredFromBackup = false;
 
   // ------------------------------------------------------------------
   // 生命周期
   // ------------------------------------------------------------------
   async onload(): Promise<void> {
+    this.localStore = new LocalStore(this.app);
     await this.loadSettings();
 
     // 必须在注册命令/视图之前确定语言：命令名、丝带提示、视图标题
     // 都是在注册那一刻定型的，改语言要靠重新加载插件。
     applyLanguage(this.settings.language);
 
-    const store = new LocalStore(this.app);
-    this.ledger = new ArrivalLedger(store);
+    this.ledger = new ArrivalLedger(this.localStore);
     this.ledger.load();
     this.service = new ArrivalsService(this.app, this.ledger, () => this.settings);
 
@@ -66,6 +85,9 @@ export default class LatestArrivalsPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       // 先把侧边栏标签页摆到正确的一侧，让用户一眼就能看到入口
       void this.applySidebarSide();
+      if (this.restoredFromBackup) {
+        new Notice(t("notice.settingsRestored"), 6000);
+      }
       void this.refresh(false).then(() => {
         const s = this.service.lastSummary;
         if (s && s.newCount > 0) {
@@ -88,19 +110,24 @@ export default class LatestArrivalsPlugin extends Plugin {
   // ------------------------------------------------------------------
   async loadSettings(): Promise<void> {
     const raw = (await this.loadData()) as Partial<LatestArrivalsSettings> | null;
-    this.settings = { ...DEFAULT_SETTINGS, ...(raw ?? {}) };
-    if (!Array.isArray(this.settings.ignoredPaths)) this.settings.ignoredPaths = [];
-    this.settings.quickCount = clampInt(this.settings.quickCount, 1, 10, 5);
-    if (!["off", "left", "right"].includes(this.settings.sidebarSide)) {
-      this.settings.sidebarSide = DEFAULT_SETTINGS.sidebarSide;
-    }
-    if (!isLanguageSetting(this.settings.language)) {
-      this.settings.language = DEFAULT_SETTINGS.language;
-    }
+    const hasRaw = raw !== null && typeof raw === "object" && Object.keys(raw).length > 0;
+
+    // data.json 不见了（手动覆盖插件目录、重装、被清理工具删掉）时，
+    // 从设备本地备份恢复，而不是静默回落成默认值。
+    const backup = hasRaw
+      ? null
+      : this.localStore.get<Partial<LatestArrivalsSettings>>(SETTINGS_BACKUP_KEY);
+    this.restoredFromBackup = backup !== null;
+
+    this.settings = normalizeSettings({ ...DEFAULT_SETTINGS, ...(raw ?? {}), ...(backup ?? {}) });
+
+    // 立刻回写一次：既保证 data.json 存在，也把（可能刚恢复的）设置写进备份
+    await this.persistSettings();
   }
 
   async persistSettings(): Promise<void> {
     await this.saveData(this.settings);
+    this.localStore.set(SETTINGS_BACKUP_KEY, this.settings);
   }
 
   /**
@@ -358,6 +385,50 @@ export default class LatestArrivalsPlugin extends Plugin {
     new Notice(t("notice.sidebarTabRemoved"));
   }
 
+  /** 把当前设置导出到 vault 根目录的 JSON */
+  async exportSettings(): Promise<void> {
+    await exportWithNotice(this.app, this.settings, this.manifest.version);
+  }
+
+  /** 打开配置文件选择器 */
+  openImportPicker(onDone: () => void): void {
+    new SettingsImportModal(this.app, (file) => {
+      void this.importSettingsFrom(file).then(onDone);
+    }).open();
+  }
+
+  /** 从 vault 里的某个 JSON 文件导入设置 */
+  async importSettingsFrom(file: TFile): Promise<void> {
+    let text: string;
+    try {
+      text = await readVaultFile(this.app, file);
+    } catch {
+      new Notice(t("notice.settingsImportFailed", { path: file.path }), 8000);
+      return;
+    }
+
+    const parsed = parseSettingsFile(text);
+    if (!parsed) {
+      new Notice(t("notice.settingsImportInvalid", { path: file.path }), 8000);
+      return;
+    }
+
+    const previousLanguage = this.settings.language;
+    // 已知键合并：文件里没写的保持当前值，写了的覆盖
+    this.settings = normalizeSettings({ ...this.settings, ...parsed });
+    await this.persistSettings();
+    await this.refresh(false);
+    await this.applySidebarSide();
+    new Notice(t("notice.settingsImported"));
+
+    // 语言变了：命令名称是在加载时注册的，必须重载插件才能刷新
+    if (this.settings.language !== previousLanguage) {
+      await this.setLanguage(this.settings.language);
+    } else {
+      this.redrawViews();
+    }
+  }
+
   async openQuickList(): Promise<void> {
     if (this.service.items.length === 0 && !this.service.lastRefreshAt) {
       await this.refresh(false);
@@ -493,6 +564,21 @@ export default class LatestArrivalsPlugin extends Plugin {
     this.registerEvent(this.app.vault.on("delete", () => schedule()));
     this.registerEvent(this.app.vault.on("rename", () => schedule()));
   }
+}
+
+/** 设置归一化：loadSettings 与「导入配置」共用，保证两条入口的校验完全一致 */
+function normalizeSettings(input: LatestArrivalsSettings): LatestArrivalsSettings {
+  const out = { ...input };
+  if (!Array.isArray(out.ignoredPaths)) out.ignoredPaths = [];
+  out.quickCount = clampInt(out.quickCount, 1, 10, 5);
+  out.deepScanIntervalSec = clampInt(out.deepScanIntervalSec, 0, 3600, 180);
+  if (!["off", "left", "right"].includes(out.sidebarSide)) {
+    out.sidebarSide = DEFAULT_SETTINGS.sidebarSide;
+  }
+  if (!isLanguageSetting(out.language)) out.language = DEFAULT_SETTINGS.language;
+  if (typeof out.excludePatterns !== "string") out.excludePatterns = "";
+  if (out.openIn !== "current" && out.openIn !== "new-tab") out.openIn = "current";
+  return out;
 }
 
 function clampInt(v: unknown, min: number, max: number, fallback: number): number {

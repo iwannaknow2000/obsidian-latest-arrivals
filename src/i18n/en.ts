@@ -44,6 +44,7 @@ export const en: Record<string, string> = {
   "notice.sidebarTabRemoved": "Removed the \"Latest arrivals\" sidebar tab",
   "notice.sidebarUnsupported": "This Obsidian version can't add the sidebar tab automatically. Run \"Open full list in sidebar\" once and it will stay there.",
   "notice.languageChanged": "Language changed. Reloading the plugin so command names update too.",
+  "notice.settingsRestored": "Plugin settings were missing and have been restored from this device's local backup.",
   "notice.reloadFailed": "Couldn't reload the plugin automatically. Toggle it off and on in Settings → Community plugins.",
 
   // ---- sort keys ----
@@ -129,6 +130,22 @@ export const en: Record<string, string> = {
   "settings.exclude.name": "Excluded paths",
   "settings.exclude.desc": "One per line, * works as a wildcard. For example: Archive/* or Templates/*",
 
+  "settings.folders.name": "Excluded folders",
+  "settings.folders.desc": "Tick whole folders to leave them out of every list. Pick them from a list instead of typing patterns.",
+  "settings.folders.button": "Choose folders…",
+  "settings.folders.none": "None selected",
+  "settings.folders.summary": "{count} excluded: {list}",
+  "settings.patterns.name": "Additional exclusion rules",
+  "settings.patterns.desc": "One per line, * and ? work as wildcards (for example Archive/20??/*). Matched against the full vault path. Use this only when folders are not enough.",
+  "folderPicker.title": "Choose folders to exclude",
+  "folderPicker.search": "Filter folders…",
+  "folderPicker.selectAll": "Select all shown",
+  "folderPicker.clear": "Clear all",
+  "folderPicker.count": "{selected} selected · {total} folders",
+  "folderPicker.empty": "No folders match your filter.",
+  "folderPicker.confirm": "Done",
+  "folderPicker.cancel": "Cancel",
+
   // ---- settings: maintenance ----
   "settings.rescanNow.name": "Rescan now",
   "settings.rescanNow.desc": "Forces a deep scan and refreshes every view.",
@@ -139,6 +156,20 @@ export const en: Record<string, string> = {
   "settings.ignored.name": "Ignored notes ({count})",
   "settings.ignored.desc": "These notes are hidden from every list.",
   "settings.ignored.restore": "Restore all",
+
+  "settings.sectionBackup": "Configuration backup",
+  "settings.export.name": "Export configuration",
+  "settings.export.desc": "Writes your settings to latest-arrivals-settings.json in the vault root. Because it lives in the vault, it syncs to your other devices, so you can export on one and import on another.",
+  "settings.export.button": "Export",
+  "settings.import.name": "Import configuration",
+  "settings.import.desc": "Pick a previously exported JSON file from your vault and apply it. The file is validated first; unrecognised keys are ignored.",
+  "settings.import.button": "Import",
+  "settings.import.placeholder": "Choose a configuration file…",
+  "notice.settingsExported": "Configuration exported to {path}",
+  "notice.settingsExportFailed": "Export failed: {reason}",
+  "notice.settingsImported": "Configuration imported.",
+  "notice.settingsImportFailed": "Import failed: could not read {path}",
+  "notice.settingsImportInvalid": "{path} is not a valid Latest Arrivals configuration file.",
 
   // ---- settings: diagnostics ----
   "settings.diag.pinyinLabel": "Pinyin sorting",

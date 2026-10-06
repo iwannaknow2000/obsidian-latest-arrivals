@@ -4,7 +4,7 @@
  */
 import { ArrivalLedger, LocalStore, estimateArrival } from "../src/ledger";
 import { compareByPinyin, detectPinyinSupport, groupLetter, pinyinInitials } from "../src/pinyin";
-import { sortItems } from "../src/sort";
+import { buildExcludeMatchers, folderToRegExp, isExcluded, sortItems } from "../src/sort";
 import { en } from "../src/i18n/en";
 import { zhCN } from "../src/i18n/zh-cn";
 import { zhTW } from "../src/i18n/zh-tw";
@@ -125,6 +125,26 @@ eq(
   sortItems(sample, "mtime", true).map((i) => i.name),
   ["甲", "乙", "丙"],
 );
+
+// ------------------------------------------------------- 排除文件夹 ----
+console.log("== 排除文件夹 ==");
+
+ok("排除 Archive 能命中其下任意层级", folderToRegExp("Archive")!.test("Archive/2026/10/x.md"));
+ok("排除 Archive 能命中直接子项", folderToRegExp("Archive")!.test("Archive/x.md"));
+ok("排除 Archive 不应误伤 MyArchive/", !folderToRegExp("Archive")!.test("MyArchive/x.md"));
+ok("排除 Archive 不应误伤 Archive2/", !folderToRegExp("Archive")!.test("Archive2/x.md"));
+ok("排除 Archive 不影响同名前缀文件", !folderToRegExp("Archive")!.test("Archive.md"));
+ok("路径里的正则特殊字符被转义", folderToRegExp("a.b(c)")!.test("a.b(c)/x.md"));
+
+const folderMatchers = buildExcludeMatchers("", ["Archive", "私人文档"]);
+ok("勾选的文件夹会被排除", isExcluded("私人文档/家书.md", folderMatchers, new Set()));
+ok("未勾选的路径不受影响", !isExcluded("Knowledge_Base/x.md", folderMatchers, new Set()));
+
+// 勾选 + 手写规则应同时生效
+const both = buildExcludeMatchers("Templates/*", ["Archive"]);
+ok("勾选与手写规则并存：手写的生效", isExcluded("Templates/a.md", both, new Set()));
+ok("勾选与手写规则并存：勾选的生效", isExcluded("Archive/b.md", both, new Set()));
+ok("勾选与手写规则并存：都不匹配时放行", !isExcluded("Inbox/c.md", both, new Set()));
 
 // ------------------------------------------------------------ 台账 ----
 console.log("== 到货台账 ==");

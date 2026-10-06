@@ -126,7 +126,10 @@ export class ArrivalsService {
       summary.inheritedCount = result.inheritedCount;
 
       // ---- 应用排除规则（仅影响展示）----
-      const matchers = buildExcludeMatchers(settings.excludePatterns);
+      const matchers = buildExcludeMatchers(
+        settings.excludePatterns,
+        settings.excludedFolders,
+      );
       const ignored = new Set(settings.ignoredPaths);
       this.visible = this.all.filter(
         (i) => !isExcluded(i.path, matchers, ignored),
