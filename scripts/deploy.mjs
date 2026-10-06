@@ -37,7 +37,15 @@ const README = `# 最新入库 (Latest Arrivals) — 手机端安装说明
 你的 Mac 端 \`.obsidian/plugins/\` 不会同步到手机，所以插件本体放在这里，
 由 Syncthing 同步过来，再由你手动复制进手机 vault 的插件目录。
 
-## 手机上怎么装（约 1 分钟）
+## 方式一：BRAT（推荐，能一键更新）
+
+1. 在 Obsidian 里装社区插件 **BRAT**（\`obsidian42-brat\`，官方市场可搜到）。
+2. 命令面板运行 **BRAT: Add a beta plugin for testing**。
+3. 填 \`iwannaknow2000/obsidian-latest-arrivals\`
+4. 回到 **设置 → 第三方插件**，启用「最新入库」。
+5. 以后更新：命令面板运行 **BRAT: Check for updates to all beta plugins**。
+
+## 方式二：手动复制（约 1 分钟）
 
 已知手机 vault 里已存在 \`.obsidian/plugins/\` 目录。
 

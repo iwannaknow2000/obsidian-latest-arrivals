@@ -1,6 +1,6 @@
 {
   "name": "obsidian-latest-arrivals",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "「最新入库」— 找出通过 Syncthing 等第三方同步工具最新到达本机的 Obsidian 笔记。",
   "private": true,
   "type": "module",
@@ -28,5 +28,10 @@
     "esbuild": "^0.24.2",
     "obsidian": "^1.8.7",
     "typescript": "^5.7.2"
+  },
+  "author": "iwannaknow2000",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iwannaknow2000/obsidian-latest-arrivals.git"
   }
 }

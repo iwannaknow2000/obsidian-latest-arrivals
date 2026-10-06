@@ -1,5 +1,8 @@
 # 最新入库 · Latest Arrivals
 
+[![Release](https://img.shields.io/github/v/release/iwannaknow2000/obsidian-latest-arrivals?label=release)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/releases/latest)
+[![Test](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml/badge.svg)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml)
+
 一个为 **Android 手机端（已在 iQOO 13 上使用）** 设计的轻量 Obsidian 插件：
 **找出通过 Syncthing 等第三方工具最新同步到本机的笔记，一点即可打开。**
 
@@ -149,7 +152,7 @@ Obsidian 移动端的**功能区（Ribbon）**在右下角 ☰ 里，但**插件
 
 1. 在 Obsidian 里装社区插件 **BRAT**（`obsidian42-brat`）。
 2. 命令面板运行 **BRAT: Add a beta plugin for testing**。
-3. 填仓库地址：`yzx224/obsidian-latest-arrivals`
+3. 填仓库地址：`iwannaknow2000/obsidian-latest-arrivals`
 4. 回到 **设置 → 第三方插件**，启用「最新入库」。
 5. 以后更新：命令面板运行 **BRAT: Check for updates to all beta plugins**。
 
