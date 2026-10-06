@@ -11,7 +11,9 @@
     "test": "npm run test:unit && npm run test:smoke",
     "test:unit": "esbuild test/run.ts --bundle --platform=node --format=esm --target=node18 --outfile=test/.build/run.mjs --log-level=warning && node test/.build/run.mjs",
     "test:smoke": "node test/smoke.cjs",
-    "deploy": "node scripts/deploy.mjs"
+    "deploy": "node scripts/deploy.mjs",
+    "publish:gh": "node scripts/publish.mjs",
+    "release": "npm version patch --no-git-tag-version && node scripts/sync-version.mjs && git add -A && git commit -m \"release: v$(node -p \"require('./manifest.json').version\")\" && node scripts/publish.mjs"
   },
   "keywords": [
     "obsidian",
