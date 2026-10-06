@@ -25,16 +25,43 @@ const DEFAULT_REPO_NAME = "obsidian-latest-arrivals";
 const ARTIFACTS = ["main.js", "manifest.json", "styles.css"];
 
 function run(cmd, args, opts = {}) {
+  const { quiet, ...rest } = opts;
   return execFileSync(cmd, args, {
     cwd: ROOT,
     encoding: "utf8",
-    stdio: opts.quiet ? ["ignore", "pipe", "pipe"] : "inherit",
-    ...opts,
+    stdio: quiet ? ["ignore", "pipe", "pipe"] : "inherit",
+    ...rest,
   });
 }
 
 function capture(cmd, args) {
   return execFileSync(cmd, args, { cwd: ROOT, encoding: "utf8" }).trim();
+}
+
+/**
+ * 让 git 通过 gh 取凭据。
+ *
+ * 优先写全局配置；如果 ~/.gitconfig 不可写（受限环境、容器、沙箱等），
+ * 退回写仓库本地配置 —— 效果一样，而且不污染用户的全局 git 设置。
+ */
+function ensureGitCredentialHelper() {
+  try {
+    const existing = capture("git", ["config", "--get", "credential.helper"]);
+    if (existing) {
+      console.log(`· git 凭据助手已配置：${existing}`);
+      return;
+    }
+  } catch {
+    /* 没配置，继续 */
+  }
+  const value = "!gh auth git-credential";
+  try {
+    run("git", ["config", "--global", "credential.helper", value], { quiet: true });
+    console.log("✓ 已配置 git 全局凭据助手（gh）");
+  } catch {
+    run("git", ["config", "--local", "credential.helper", value], { quiet: true });
+    console.log("✓ 已配置 git 仓库级凭据助手（gh）；~/.gitconfig 不可写，因此未改全局设置");
+  }
 }
 
 function main() {
@@ -68,6 +95,8 @@ function main() {
     const owner = process.env.REPO ? process.env.REPO.split("/")[0] : login;
     const repo = process.env.REPO || `${owner}/${DEFAULT_REPO_NAME}`;
     console.log(`✓ 已授权为 ${login}，目标仓库 ${repo}`);
+
+    ensureGitCredentialHelper();
 
     // ---- 建仓库 / 配 remote ----
     let remote = "";
