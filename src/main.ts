@@ -291,15 +291,32 @@ export default class LatestArrivalsPlugin extends Plugin {
       return;
     }
 
-    // 已经在正确的一侧：什么都不用做
-    if (existing.length > 0 && existing.every((leaf) => this.leafSide(leaf) === side)) {
-      if (opts.reveal) await ws.revealLeaf(existing[0]);
+    // 优先保留「已经在目标一侧」的那个；位置判断不出来时就保留第一个，
+    // 不对它做无谓的拆建（否则每次加载都会重置用户的标签页顺序）。
+    const onTargetSide = existing.find((leaf) => this.leafSide(leaf) === side);
+    const keep = onTargetSide ?? existing[0];
+
+    // 无论「位置不对」还是「同一侧出现重复」，都只留一个。
+    // 这里必须无条件去重：v1.2.1 只比对了位置，
+    // 两个都落在左侧时 every() 成立，于是两个都被留下 —— 用户就会看到两个。
+    for (const leaf of existing) {
+      if (leaf !== keep) leaf.detach();
+    }
+
+    if (!keep) {
+      await this.ensureSidebarTab(opts);
       return;
     }
 
-    // 否则先拆掉位置不对的，再重新挂到目标一侧
-    for (const leaf of existing) leaf.detach();
-    await this.ensureSidebarTab(opts);
+    // 明确知道它落在另一侧 → 拆掉重挂到目标侧
+    const current = this.leafSide(keep);
+    if (current !== "off" && current !== side) {
+      keep.detach();
+      await this.ensureSidebarTab(opts);
+      return;
+    }
+
+    if (opts.reveal) await ws.revealLeaf(keep);
   }
 
   /**

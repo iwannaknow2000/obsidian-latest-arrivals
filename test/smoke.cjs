@@ -176,6 +176,15 @@ obsidian.setApp(app);
     moved.map((l) => l.side).join(",") || "没有标签页");
   ok("搬家后旧标签页已被拆除", app.workspace.getLeavesOfType("latest-arrivals-view").length === 1);
 
+  // 同一侧出现两个重复标签页时，必须收敛成一个
+  await app.workspace.ensureSideLeaf("latest-arrivals-view", "left", {});
+  await app.workspace.ensureSideLeaf("latest-arrivals-view", "left", {});
+  const dupBefore = app.workspace.getLeavesOfType("latest-arrivals-view").length;
+  await plugin.applySidebarSide({});
+  const dupAfter = app.workspace.getLeavesOfType("latest-arrivals-view").length;
+  ok("构造出同一侧两个重复标签页", dupBefore === 3, `实际 ${dupBefore} 个`);
+  ok("applySidebarSide 把重复标签页收敛成一个", dupAfter === 1, `实际剩下 ${dupAfter} 个`);
+
   // 切到「不挂载」应该全部拆掉
   plugin.settings.sidebarSide = "off";
   await plugin.applySidebarSide({});
