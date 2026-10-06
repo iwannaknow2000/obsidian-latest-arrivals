@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 构建产物：不入库，由 GitHub Release 作为附件分发
+# （Obsidian 插件仓库的通行做法：源码入库，main.js 只放 Release）
+main.js
+main.js.map
+
+# 测试中间产物
+test/.build/
+
+# 本地 npm 缓存（本项目为绕开权限问题使用了项目内缓存）
+.npm-cache/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.log
