@@ -23,8 +23,6 @@ export const en: Record<string, string> = {
   // ---- context menus ----
   "menu.open": "Open",
   "menu.openInNewTab": "Open in new tab",
-  "menu.copyLink": "Copy note link",
-  "menu.copyPath": "Copy file path",
   "menu.ignore": "Ignore from latest arrivals",
   "menu.openList": "Open \"Latest arrivals\" list",
 
@@ -38,9 +36,6 @@ export const en: Record<string, string> = {
   "notice.ignored": "Ignored \"{name}\"",
   "notice.notIndexed": "\"{name}\" hasn't been indexed by Obsidian yet. Its arrival time is recorded - restart Obsidian to open it.",
   "notice.fileNotFound": "File not found: {path}",
-  "notice.copiedLink": "Copied [[note link]]",
-  "notice.copiedPath": "Copied file path",
-  "notice.copyFailed": "Copy failed: {text}",
   "notice.sidebarTabRemoved": "Removed the \"Latest arrivals\" sidebar tab",
   "notice.sidebarUnsupported": "This Obsidian version can't add the sidebar tab automatically. Run \"Open full list in sidebar\" once and it will stay there.",
   "notice.languageChanged": "Language changed. Reloading the plugin so command names update too.",

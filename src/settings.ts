@@ -50,7 +50,6 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
       s
         .setLimits(1, 10, 1)
         .setValue(this.plugin.settings.quickCount)
-        .setDynamicTooltip()
         .onChange(async (v) => {
           this.plugin.settings.quickCount = v;
           await this.plugin.persistSettings();
@@ -153,8 +152,7 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
           s
             .setLimits(0, 900, 30)
             .setValue(this.plugin.settings.deepScanIntervalSec)
-            .setDynamicTooltip()
-            .onChange(async (v) => {
+                .onChange(async (v) => {
               this.plugin.settings.deepScanIntervalSec = v;
               await this.plugin.persistSettings();
             }),
@@ -224,8 +222,10 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
       .setName(t("settings.rebuild.name"))
       .setDesc(t("settings.rebuild.desc"))
       .addButton((b) =>
+        // setWarning() 在 Obsidian 1.13.0 被弃用，改用公开的样式类，
+        // 效果相同且不绑定版本（setDestructive 是 1.13.0 才有的 API）。
         b
-          .setWarning()
+          .setClass("mod-warning")
           .setButtonText(t("settings.rebuild.button"))
           .onClick(async () => {
             this.plugin.rebuildLedger();

@@ -248,19 +248,6 @@ export default class LatestArrivalsPlugin extends Plugin {
     menu.addSeparator();
     menu.addItem((i) =>
       i
-        .setTitle(t("menu.copyLink"))
-        .setIcon("link")
-        .onClick(() => void copyText(`[[${item.name}]]`, t("notice.copiedLink"))),
-    );
-    menu.addItem((i) =>
-      i
-        .setTitle(t("menu.copyPath"))
-        .setIcon("clipboard")
-        .onClick(() => void copyText(item.path, t("notice.copiedPath"))),
-    );
-    menu.addSeparator();
-    menu.addItem((i) =>
-      i
         .setTitle(t("menu.ignore"))
         .setIcon("eye-off")
         .onClick(() => {
@@ -585,13 +572,4 @@ function clampInt(v: unknown, min: number, max: number, fallback: number): numbe
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, Math.round(n)));
-}
-
-async function copyText(text: string, okMessage: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    new Notice(okMessage);
-  } catch {
-    new Notice(t("notice.copyFailed", { text }));
-  }
 }

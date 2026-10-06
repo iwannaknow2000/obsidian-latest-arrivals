@@ -17,8 +17,6 @@ export const zhCN: Record<string, string> = {
   // ---- 右键菜单 ----
   "menu.open": "打开",
   "menu.openInNewTab": "在新标签页打开",
-  "menu.copyLink": "复制笔记链接",
-  "menu.copyPath": "复制文件路径",
   "menu.ignore": "从「最新入库」中忽略",
   "menu.openList": "打开「最新入库」列表",
 
@@ -32,9 +30,6 @@ export const zhCN: Record<string, string> = {
   "notice.ignored": "已忽略《{name}》",
   "notice.notIndexed": "《{name}》还没被 Obsidian 索引。插件已经记录了它的入库时间，重启 Obsidian 后即可打开。",
   "notice.fileNotFound": "找不到文件：{path}",
-  "notice.copiedLink": "已复制 [[笔记链接]]",
-  "notice.copiedPath": "已复制文件路径",
-  "notice.copyFailed": "复制失败：{text}",
   "notice.sidebarTabRemoved": "已从侧边栏移除「最新入库」标签页",
   "notice.sidebarUnsupported": "当前 Obsidian 版本不支持自动挂载侧边栏标签页。请先运行一次「在侧边栏打开完整列表」，之后它会常驻。",
   "notice.languageChanged": "界面语言已切换，正在重新加载插件（命令名称也会一并更新）。",

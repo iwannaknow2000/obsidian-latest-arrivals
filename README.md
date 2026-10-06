@@ -70,7 +70,7 @@ Obsidian's directory asks plugins to disclose what they touch. This plugin:
 |---|---|
 | **Enumerates the vault** (`vault.getMarkdownFiles()`, plus an optional recursive `adapter.list`) | It has to see the full set of notes in order to compute "what is new". The deep scan exists to catch files Syncthing has written but Obsidian has not indexed yet, and can be turned off in settings. |
 | **Reads and writes vault files** | Reads notes to open them; writes only the optional configuration export at the vault root. |
-| **Clipboard access** | Only when you explicitly choose *Copy note link* or *Copy file path* from a note's context menu. Nothing is ever read from the clipboard. |
+| **Clipboard** | **None.** The plugin neither reads nor writes the clipboard. |
 | **Device-local key/value storage** (`App.saveLocalStorage`) | Stores the arrival ledger and a settings backup. Never synced. |
 | **Network** | **None.** No network requests, no telemetry, and the plugin does not update itself or its dependencies. |
 | **Access outside the vault** | **None.** No Node/Electron APIs, no `adapter.getFullPath()`. The deep scan starts at the vault root and only ever descends into directories it listed itself. |

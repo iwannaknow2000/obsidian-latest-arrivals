@@ -17,8 +17,6 @@ export const zhTW: Record<string, string> = {
   // ---- 右鍵選單 ----
   "menu.open": "開啟",
   "menu.openInNewTab": "在新分頁開啟",
-  "menu.copyLink": "複製筆記連結",
-  "menu.copyPath": "複製檔案路徑",
   "menu.ignore": "從「最新入庫」中忽略",
   "menu.openList": "開啟「最新入庫」清單",
 
@@ -32,9 +30,6 @@ export const zhTW: Record<string, string> = {
   "notice.ignored": "已忽略《{name}》",
   "notice.notIndexed": "《{name}》還沒被 Obsidian 建立索引。外掛已經記錄了它的入庫時間，重新啟動 Obsidian 後即可開啟。",
   "notice.fileNotFound": "找不到檔案：{path}",
-  "notice.copiedLink": "已複製 [[筆記連結]]",
-  "notice.copiedPath": "已複製檔案路徑",
-  "notice.copyFailed": "複製失敗：{text}",
   "notice.sidebarTabRemoved": "已從側邊欄移除「最新入庫」分頁",
   "notice.sidebarUnsupported": "目前的 Obsidian 版本不支援自動掛載側邊欄分頁。請先執行一次「在側邊欄開啟完整清單」，之後它會常駐。",
   "notice.languageChanged": "介面語言已切換，正在重新載入外掛（指令名稱也會一併更新）。",

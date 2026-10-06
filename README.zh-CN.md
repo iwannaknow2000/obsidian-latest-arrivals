@@ -2,6 +2,8 @@
 
 [English →](README.md)
 
+> 本文件是 [README.md](README.md) 的中文译本，**以英文版为准**；两者不一致时按英文版理解。
+
 [![Release](https://img.shields.io/github/v/release/iwannaknow2000/obsidian-latest-arrivals?label=release)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/releases/latest)
 [![Test](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml/badge.svg)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml)
 
@@ -59,25 +61,18 @@
 
 ---
 
-## 3. 界面语言
+## 3. 权限与数据访问
 
-插件**默认英文**，并会跟随你的 Obsidian 界面语言自动切换；也可以在
-**设置 → Latest Arrivals → Interface language** 里手动锁定。
+Obsidian 目录要求插件披露它会接触什么。本插件：
 
-| 语言 | 状态 |
+| 行为 | 原因 |
 |---|---|
-| English | 默认，也是所有语言缺失键的回退目标 |
-| 简体中文 | ✅ |
-| 繁體中文 | ✅ |
-
-命令名称、功能区提示、侧边栏标题都是在插件加载时注册的，Obsidian 没有「改名」 API，
-所以切换语言时插件会自动重新加载一次；万一失败会提示你手动关掉再打开。
-
-新增一种语言只需要在 `src/i18n/` 下加一个文件、在 `LOCALES` 里注册一行——
-`npm test` 里有断言会检查各语言包的键集合与占位符是否完全对齐。
-
-> `manifest.json` 里的 `name` / `description` 由 Obsidian 直接读取，
-> **无法按语言变化**，所以插件列表里始终显示英文名。
+| **枚举 vault**（`vault.getMarkdownFiles()`，以及可选的递归 `adapter.list`） | 要算出「哪些是新来的」，就必须看到全部笔记。深扫用于抓出同步工具已写入、但 Obsidian 还没索引的文件，可在设置里关闭。 |
+| **读写 vault 文件** | 读是为了打开笔记；写只发生在你主动导出配置时（写到 vault 根目录）。 |
+| **剪贴板** | **完全不使用。** 插件既不读取也不写入剪贴板。 |
+| **设备本地键值存储**（`App.saveLocalStorage`） | 存放到货台账与设置备份，不会被同步。 |
+| **网络** | **完全不联网。** 无网络请求、无遥测，也不会自我更新或更新依赖。 |
+| **vault 之外的访问** | **没有。** 不使用 Node/Electron API，不调用 `adapter.getFullPath()`；深扫从 vault 根开始，只会进入它自己列出的目录。 |
 
 ---
 
@@ -188,7 +183,29 @@
 
 ---
 
-## 5. 安装
+## 5. 界面语言
+
+插件**默认英文**，并会跟随你的 Obsidian 界面语言自动切换；也可以在
+**设置 → Latest Arrivals → Interface language** 里手动锁定。
+
+| 语言 | 状态 |
+|---|---|
+| English | 默认，也是所有语言缺失键的回退目标 |
+| 简体中文 | ✅ |
+| 繁體中文 | ✅ |
+
+命令名称、功能区提示、侧边栏标题都是在插件加载时注册的，Obsidian 没有「改名」 API，
+所以切换语言时插件会自动重新加载一次；万一失败会提示你手动关掉再打开。
+
+新增一种语言只需要在 `src/i18n/` 下加一个文件、在 `LOCALES` 里注册一行——
+`npm test` 里有断言会检查各语言包的键集合与占位符是否完全对齐。
+
+> `manifest.json` 里的 `name` / `description` 由 Obsidian 直接读取，
+> **无法按语言变化**，所以插件列表里始终显示英文名。
+
+---
+
+## 6. 安装
 
 ### 方式 A：BRAT（推荐，能一键更新）
 
@@ -230,7 +247,7 @@
 
 ---
 
-## 6. 开发
+## 7. 开发
 
 ```bash
 npm install          # 首次
@@ -276,7 +293,7 @@ test/
 
 ---
 
-## 7. 已知限制
+## 8. 已知限制
 
 - **完全不联网**：插件不做任何网络请求，不包含遥测，也不会自我更新。
 
