@@ -165,3 +165,32 @@
 
 如果手机上还是旧版本、且 BRAT 一直报错，**先手动覆盖那 3 个文件**再提交 ——
 提交的版本应该是你亲自验证过的那一版。
+
+---
+
+## 附录：v1.3.0 自动审核结果与处理
+
+首次提交（2026-10-06，draft 状态，审核版本 1.3.0）回执：
+
+| 检查项 | 结果 | 处理 |
+|---|---|---|
+| **README** | ⚠️ **Warning**：README does not appear to contain English text | ✅ **已修**：`README.md` 重写为英文（99.5% English），中文内容移至 `README.zh-CN.md`，两版互链 |
+| RELEASES | 🟡 Recommendation：Missing GitHub artifact attestations | ✅ **已修**：CI 增加 `actions/attest-build-provenance@v2`，为 `main.js` / `styles.css` 生成构建来源证明 |
+| BEHAVIOR | 🟡 Recommendation：Vault Enumeration | ✅ **已披露**：README 新增「Permissions and data access」章节逐项说明用途 |
+| BEHAVIOR | 🟡 Recommendation：Clipboard Access | ✅ **已披露**：同上（仅在你显式选择「复制笔记链接/路径」时使用，从不读取剪贴板） |
+| NETWORK REQUESTS | ✅ Pass | — |
+| CODE OBFUSCATION | ✅ Pass（说明生产构建的 `minify` 没被判成混淆） | — |
+| Vault Read / Vault Write | ✅ Pass | — |
+
+**产出**：`v1.3.1`。
+
+> 注意：审核回执里的 **Warning 和 Recommendation 都不阻塞上架**，
+> 文档说明「won't be installable … until any errors from the automated review are resolved」，
+> 只对 error 生效。我们一条 error 都没有。
+>
+> 但仍值得修：README 是英文这是**硬性内容要求**，attestation 是供应链安全的正经建议。
+
+### 修改后怎么让审核重跑
+
+回到 <https://community.obsidian.md> 的插件页面，点 **Check for new releases**。
+目录会拉取最新的 Release 与默认分支状态，重新跑一遍检查。
