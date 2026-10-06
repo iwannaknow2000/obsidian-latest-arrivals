@@ -67,46 +67,75 @@
 
 ---
 
-## 操作步骤
+## 操作步骤（已按实际界面更正）
 
-### 第 1 步：关联 GitHub
+> ⚠️ 官方文档描述的顺序容易误解。实际界面分三处：
+> **Profile**（连接账号 + 个人资料）、**Plugins**（提交插件）、**Community site**（公开目录）。
 
-1. 打开 <https://community.obsidian.md> 并登录
-2. 进入个人资料 / 账号设置，找到 **GitHub** 一项，点关联并授权
-3. 授权后目录才能确认这个仓库是你的
+### 第 1 步：连接 GitHub（不做这步无法提交）
+
+在左侧 **Profile** 页，**往上滚**，找到 **GitHub** 一栏，点 **Connect** → 跳转 GitHub 授权。
+
+官方原文：
+
+> Under **GitHub**, select **Connect** to link your GitHub account.
+> …and **is required before you can submit a plugin or theme**.
 
 > ⚠️ **别关联错账号。**
 >
-> GitHub 有「用户名（login）」和「显示名（name）」两个概念：
->
 > | | 值 |
 > |---|---|
-> | 用户名 login（**要用这个**） | `iwannaknow2000` |
-> | 显示名 name | `yuanmc` |
+> | GitHub 用户名 login（**要用这个**） | `iwannaknow2000` |
+> | GitHub 显示名 name | `yuanmc` |
+> | Obsidian 账号 Username / Name | `yuan` / `mc` |
 >
-> 另外确实存在一个**用户名就叫 `yuanmc`** 的账号（2013 年注册、0 个仓库），**那不是你**。
-> 授权时请确认选中的是 **`iwannaknow2000`**，否则目录无法验证仓库归属。
+> 注意 `yuanmc` 只是 GitHub 的**显示名**，而 GitHub 上**另有一个用户名就叫 `yuanmc`** 的账号
+> （2013 年注册、0 个仓库），**那不是你**。授权时确认选中的是 `iwannaknow2000`。
 
-### 第 2 步：添加插件
+### 第 2 步：个人资料（可选，不影响提交）
 
-1. 在目录里找 **Add plugin** / **Submit a plugin**（个人资料页或侧栏）
-2. **Repository** 填 `iwannaknow2000/obsidian-latest-arrivals`
-3. 确认自动带出的信息，描述可按上表核对
-4. 提交
+同一页的 **Profile** 区域：
 
-### 第 3 步：看自动审核结果
+| 字段 | 建议 |
+|---|---|
+| **Username** | 公开主页地址，小写字母/数字/连字符。当前是 `yuan`，可保留 |
+| **Name** | 显示名，当前是 `mc`，可保留 |
+| **Bio** | 可留空 |
+| **Website** | **填网址**，不是仓库路径。可填 `https://github.com/iwannaknow2000`，或留空 |
+| **Social accounts** | 可留空 |
+
+改完点 **Save**。
+
+### 第 3 步：提交插件
+
+左侧导航 → **Plugins** → **New plugin**。
+
+表单只有两项：
+
+| 字段 | 填什么 |
+|---|---|
+| **GitHub repository URL** | `https://github.com/iwannaknow2000/obsidian-latest-arrivals` |
+| **Owner** | 选 **Myself**（你自己） |
+
+**其他信息不用填** —— 名称、描述、版本、作者由目录自动读取你仓库默认分支的 `manifest.json`。
+
+### 第 4 步：看自动审核结果
 
 提交后目录会立刻跑检查，页面会列出需要修正的项。
 
 - **全部通过** → 等人工复核后上架，用户在 Obsidian 里就能搜到
 - **有报错** → 按提示改仓库，然后**发一个新的 Release**（版本号必须递增）
 
-> 发新版本的命令（在项目目录里跑）：
+> 发新版本（在项目目录里跑）：
 > ```bash
 > npm run release -- patch     # 或 minor / major
 > ```
-> 会自动升版本号、同步三处版本号、提交、打 tag、推送，
-> 再由 GitHub Actions 构建并发 Release。
+> 自动升版本号、同步三处版本号、提交、打 tag、推送，再由 GitHub Actions 构建并发 Release。
+
+### 附：Claim（认领）是什么
+
+连接 GitHub 后，目录会提示你 **Claim**（认领）你拥有的仓库里**已有的**目录条目。
+本项目是**全新条目**，没有可认领的，走上面第 3 步 **New plugin** 即可。
 
 ---
 
