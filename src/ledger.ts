@@ -7,36 +7,18 @@ import type { ArrivalItem, RawFileInfo } from "./types";
  * 台账**绝不能**写进 `data.json` —— 那个文件在 vault 里，会被 Syncthing 同步，
  * 导致 Mac 和手机互相覆盖、还会生成 sync-conflict 副本。
  *
- * 优先使用 Obsidian 官方 API `App.saveLocalStorage`（≥ 1.8.7，
- * 官方注释明确写着 “Save vault-specific value to localStorage”，不进 vault）；
- * 低版本回退到裸 `localStorage` 并加 vault 前缀，行为等价。
+ * 这里用的是 Obsidian 官方的 `App.loadLocalStorage` / `App.saveLocalStorage`
+ * （自 1.8.7 起提供），它们的注释明确写着 "for this vault"：
+ * 数据存在 App 本地存储里，不进 vault、不会被同步，正好符合
+ * 「按设备记录到货时间」的语义。
  */
 export class LocalStore {
   constructor(private readonly app: App) {}
 
-  private fallbackKey(key: string): string {
-    let vault = "unknown";
-    try {
-      vault = this.app.vault.getName();
-    } catch {
-      /* ignore */
-    }
-    return `latest-arrivals:${vault}:${key}`;
-  }
-
   get<T>(key: string): T | null {
     try {
-      if (typeof this.app.loadLocalStorage === "function") {
-        const v = this.app.loadLocalStorage(key);
-        if (v !== undefined && v !== null) return v as T;
-        // 官方 API 存在但还没写过：仍然尝试回退键，避免换版本后丢台账
-      }
-    } catch {
-      /* 落到回退分支 */
-    }
-    try {
-      const raw = window.localStorage.getItem(this.fallbackKey(key));
-      return raw ? (JSON.parse(raw) as T) : null;
+      const value: unknown = this.app.loadLocalStorage(key);
+      return value === undefined || value === null ? null : (value as T);
     } catch {
       return null;
     }
@@ -44,17 +26,9 @@ export class LocalStore {
 
   set(key: string, value: unknown): void {
     try {
-      if (typeof this.app.saveLocalStorage === "function") {
-        this.app.saveLocalStorage(key, value);
-        return;
-      }
+      this.app.saveLocalStorage(key, value);
     } catch {
-      /* 落到回退分支 */
-    }
-    try {
-      window.localStorage.setItem(this.fallbackKey(key), JSON.stringify(value));
-    } catch {
-      /* 配额满等情况静默失败，不影响主流程 */
+      /* 配额满或不可序列化时静默失败，不影响主流程 */
     }
   }
 }
@@ -123,7 +97,7 @@ export interface ReconcileResult {
 export class ArrivalLedger {
   private state: LedgerState = { v: 1, lastScanAt: 0, entries: {} };
   private dirty = false;
-  private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private saveTimer: number | null = null;
 
   constructor(private readonly store: LocalStore) {}
 
@@ -151,8 +125,8 @@ export class ArrivalLedger {
 
   /** 立即落盘 */
   flush(): void {
-    if (this.saveTimer) {
-      clearTimeout(this.saveTimer);
+    if (this.saveTimer !== null) {
+      window.clearTimeout(this.saveTimer);
       this.saveTimer = null;
     }
     if (!this.dirty) return;
@@ -168,7 +142,7 @@ export class ArrivalLedger {
   scheduleSave(): void {
     this.dirty = true;
     if (this.saveTimer) return;
-    this.saveTimer = setTimeout(() => {
+    this.saveTimer = window.setTimeout(() => {
       this.saveTimer = null;
       this.flush();
     }, 1500);

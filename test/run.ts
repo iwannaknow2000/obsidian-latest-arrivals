@@ -5,7 +5,20 @@
 import { ArrivalLedger, LocalStore, estimateArrival } from "../src/ledger";
 import { compareByPinyin, detectPinyinSupport, groupLetter, pinyinInitials } from "../src/pinyin";
 import { sortItems } from "../src/sort";
+import { en } from "../src/i18n/en";
+import { zhCN } from "../src/i18n/zh-cn";
+import { zhTW } from "../src/i18n/zh-tw";
 import type { ArrivalItem, RawFileInfo } from "../src/types";
+
+/*
+ * Node 里没有 window。台账为了兼容 Obsidian 的弹出窗口，统一用
+ * window.setTimeout / window.clearTimeout（官方 lint 规则要求），
+ * 所以这里补一个最小垫片。
+ */
+(globalThis as unknown as { window: unknown }).window = {
+  setTimeout,
+  clearTimeout,
+};
 
 let passed = 0;
 const failures: string[] = [];
@@ -27,7 +40,7 @@ function eq<T>(name: string, actual: T, expected: T): void {
 // ---------------------------------------------------------------- 拼音 ----
 console.log("== 拼音首字母 ==");
 const support = detectPinyinSupport();
-console.log("   模式:", support.mode, support.detail);
+console.log("   模式:", support.mode, support.locale || "(fallback)");
 
 if (support.ok) {
   eq("知识管理", pinyinInitials("知识管理"), "ZSGL");
@@ -47,6 +60,22 @@ if (support.ok) {
 } else {
   console.log("   （当前运行时无拼音数据，跳过拼音断言）");
 }
+
+// ------------------------------------------------------------ 语言包 ----
+console.log("== 语言包 ==");
+const enKeys = Object.keys(en).sort();
+eq("zh-CN 键集合与英文一致", Object.keys(zhCN).sort(), enKeys);
+eq("zh-TW 键集合与英文一致", Object.keys(zhTW).sort(), enKeys);
+ok("英文包里没有空文案", Object.values(en).every((v) => v.trim().length > 0));
+ok("简体中文里没有空文案", Object.values(zhCN).every((v) => v.trim().length > 0));
+ok("繁体中文里没有空文案", Object.values(zhTW).every((v) => v.trim().length > 0));
+ok(
+  "占位符在三套语言包里一一对应",
+  enKeys.every((k) => {
+    const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(",");
+    return holes(en[k]) === holes(zhCN[k]) && holes(en[k]) === holes(zhTW[k]);
+  }),
+);
 
 // ------------------------------------------------------------ 排序键 ----
 console.log("== 排序 ==");

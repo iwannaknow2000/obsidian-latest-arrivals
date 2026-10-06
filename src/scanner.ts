@@ -2,14 +2,18 @@ import { App, normalizePath, TFile } from "obsidian";
 import type { RawFileInfo } from "./types";
 
 const MD_RE = /\.md$/i;
-/** 深度扫描需要跳过的目录名 */
+/**
+ * 深度扫描需要跳过的目录名。
+ *
+ * 这里刻意**不**写死 Obsidian 的配置目录 —— 用户可以在设置里改名，
+ * 运行时用 `Vault#configDir` 拿到真实值再判断。
+ */
 const SKIP_DIR_NAMES = new Set([
   ".trash",
   ".git",
   ".stfolder",
   ".stversions",
   "node_modules",
-  ".obsidian",
   ".smart-connections",
 ]);
 /** 目录递归上限，防止在异常 vault 上跑飞 */
@@ -85,7 +89,7 @@ export async function collectDeepScan(
     try {
       return app.vault.configDir;
     } catch {
-      return ".obsidian";
+      return "";
     }
   })();
 
@@ -108,7 +112,8 @@ export async function collectDeepScan(
     for (const sub of listed.folders) {
       const base = sub.split("/").pop() ?? sub;
       if (SKIP_DIR_NAMES.has(base) || base.startsWith(".")) continue;
-      if (base === configDir) continue;
+      // 配置目录可能被用户改成非点号开头的名字，所以还要按真实路径比一次
+      if (configDir !== "" && sub === configDir) continue;
       await walk(sub, depth + 1);
       if (truncated) return;
     }

@@ -235,3 +235,50 @@ obsidian-latest-arrivals/
 
 - 发布到 GitHub（Release + BRAT），手机端即可一键更新，省去手动复制文件夹。
 - 提交到 Obsidian 官方社区插件市场。
+
+---
+
+## 11. v1.2.0：国际化 + 移动端入口修正
+
+### 背景
+
+用户反馈两点：
+1. 希望插件**默认英文**，能跟随系统语言，也能在设置里手动切换；
+2. 想知道能不能把「最新入库」加进手机左侧抽屉底部的那份列表（文件列表 / 搜索 / 标签 / 书签 …），
+   以及那排「新建笔记 / 新建文件夹 / 排序」图标按钮里。
+
+### 结论
+
+- 那排图标按钮是**文件列表插件自己的工具栏**，Obsidian 未开放 API，第三方插件无法添加。
+- 那份视图列表是**左侧边栏的标签页列表**：插件只要把视图挂在**左侧**边栏就会出现。
+  因此把 `sidebarSide` 默认值由 `right` 改为 `left`。
+
+### 实现
+
+- 新增 `src/i18n/`：`en`（默认，兼回退）/ `zh-CN` / `zh-TW` 三套语言包，
+  `applyLanguage()` 解析设置值，`auto` 时用 `moment.locale()` 探测 Obsidian 界面语言
+  （比 `navigator.language` 更贴近用户在 Obsidian 里看到的语言），失败再退回浏览器语言。
+- 命令名、功能区提示、视图标题在加载时注册，Obsidian 无改名 API，
+  所以切换语言时通过 `app.plugins.disablePlugin/enablePlugin` 自动重载插件（失败则提示手动开关）。
+- `src/` 全部硬编码文案改走 `t()`，支持 `{name}` 占位符。
+
+### 顺带修掉的官方审核问题
+
+接入 `eslint-plugin-obsidianmd`（官方审核用的规则集）后发现 **29 个问题**，逐一处理：
+
+| 问题 | 处理 |
+|---|---|
+| `no-unsupported-api`：用了 1.8.7 的 `App.loadLocalStorage` 却声明 `minAppVersion: 1.5.0` | `minAppVersion` 提到 **1.8.7**，并删掉 `window.localStorage` 回退分支 |
+| `settings-tab/no-manual-html-headings`（7 处） | 改用 `new Setting(el).setName(x).setHeading()` |
+| `ui/sentence-case` | 改英文默认后自然消解 |
+| `prefer-window-timers`（5 处） | 统一 `window.setTimeout` / `window.clearTimeout` |
+| `hardcoded-config-path` | 不再写死 `.obsidian`，运行时用 `Vault#configDir` 判断 |
+| `no-unsafe-assignment` | 显式标注 `const value: unknown` |
+| `no-deprecated` / `prefer-setting-definitions` | **有意保留**：`getSettingDefinitions()` 是 1.13.0 的新 API，用它会排除掉所有老版本用户；`display()` 至今完全可用。在 `eslint.config.mjs` 里注明理由后局部关闭 |
+
+最终：**0 error，1 warning（已说明）**。
+
+### 测试
+
+- 逻辑断言 37 → **43**：新增三套语言包的键集合一致性、空文案、`{占位符}` 对齐断言。
+- 打包体积 37 KB → **68 KB**（gzip 19 KB），仍为零运行时依赖。

@@ -1,5 +1,6 @@
 import { setIcon } from "obsidian";
 import { formatBytes, formatDateTime, formatRelative, isFresh } from "../format";
+import { t } from "../i18n";
 import type { ArrivalItem } from "../types";
 
 export interface RowHandlers {
@@ -39,11 +40,14 @@ export function renderRow(
 
   const meta = main.createDiv({ cls: "la-row-meta" });
   if (item.isNew) {
-    meta.createSpan({ cls: "la-badge la-badge-new", text: "新" });
+    meta.createSpan({ cls: "la-badge la-badge-new", text: t("row.badgeNew") });
   }
   if (item.unindexed) {
-    const b = meta.createSpan({ cls: "la-badge la-badge-warn", text: "待索引" });
-    b.setAttr("aria-label", "尚未被 Obsidian 索引，重启 Obsidian 后即可正常打开");
+    const badge = meta.createSpan({
+      cls: "la-badge la-badge-warn",
+      text: t("row.badgeUnindexed"),
+    });
+    badge.setAttr("aria-label", t("row.badgeUnindexedTooltip"));
   }
   meta.createSpan({ cls: "la-meta-time", text: formatRelative(item.firstSeen) });
   meta.createSpan({ cls: "la-meta-dot", text: "·" });
@@ -56,7 +60,7 @@ export function renderRow(
   }
 
   const side = row.createDiv({ cls: "la-row-side" });
-  side.setAttr("title", `入库 ${formatDateTime(item.firstSeen)}`);
+  side.setAttr("title", t("row.arrivedAt", { time: formatDateTime(item.firstSeen) }));
   setIcon(side, "chevron-right");
 
   row.addEventListener("click", (ev) => {

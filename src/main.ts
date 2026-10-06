@@ -1,12 +1,10 @@
-import { Menu, Notice, Platform, Plugin, TFile, WorkspaceLeaf } from "obsidian";
+import { Menu, Notice, Platform, Plugin, TFile } from "obsidian";
 import { ArrivalLedger, LocalStore } from "./ledger";
 import { ArrivalsService } from "./service";
 import { LatestArrivalsSettingTab } from "./settings";
 import { LatestArrivalsModal } from "./ui/modal";
-import {
-  LATEST_ARRIVALS_VIEW,
-  LatestArrivalsView,
-} from "./ui/view";
+import { LATEST_ARRIVALS_VIEW, LatestArrivalsView } from "./ui/view";
+import { applyLanguage, isLanguageSetting, t, type LanguageSetting } from "./i18n";
 import {
   DEFAULT_SETTINGS,
   type ArrivalItem,
@@ -23,13 +21,17 @@ export default class LatestArrivalsPlugin extends Plugin {
   ledger!: ArrivalLedger;
   service!: ArrivalsService;
 
-  private eventTimer: ReturnType<typeof setTimeout> | null = null;
+  private eventTimer: number | null = null;
 
   // ------------------------------------------------------------------
   // 生命周期
   // ------------------------------------------------------------------
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    // 必须在注册命令/视图之前确定语言：命令名、丝带提示、视图标题
+    // 都是在注册那一刻定型的，改语言要靠重新加载插件。
+    applyLanguage(this.settings.language);
 
     const store = new LocalStore(this.app);
     this.ledger = new ArrivalLedger(store);
@@ -41,7 +43,7 @@ export default class LatestArrivalsPlugin extends Plugin {
       (leaf) => new LatestArrivalsView(leaf, this),
     );
 
-    this.addRibbonIcon("history", "最新入库", () => {
+    this.addRibbonIcon("history", t("ribbon.title"), () => {
       void this.openQuickList();
     });
 
@@ -67,14 +69,17 @@ export default class LatestArrivalsPlugin extends Plugin {
       void this.refresh(false).then(() => {
         const s = this.service.lastSummary;
         if (s && s.newCount > 0) {
-          new Notice(`「最新入库」发现 ${s.newCount} 篇新笔记`, 4000);
+          new Notice(t("notice.newArrivals", { count: s.newCount }), 4000);
         }
       });
     });
   }
 
   onunload(): void {
-    if (this.eventTimer) clearTimeout(this.eventTimer);
+    if (this.eventTimer !== null) {
+      window.clearTimeout(this.eventTimer);
+      this.eventTimer = null;
+    }
     this.ledger?.flush();
   }
 
@@ -89,10 +94,54 @@ export default class LatestArrivalsPlugin extends Plugin {
     if (!["off", "left", "right"].includes(this.settings.sidebarSide)) {
       this.settings.sidebarSide = DEFAULT_SETTINGS.sidebarSide;
     }
+    if (!isLanguageSetting(this.settings.language)) {
+      this.settings.language = DEFAULT_SETTINGS.language;
+    }
   }
 
   async persistSettings(): Promise<void> {
     await this.saveData(this.settings);
+  }
+
+  /**
+   * 切换界面语言。
+   *
+   * 命令名称、丝带提示、视图标题都是在插件加载时注册的，Obsidian 没有提供
+   * 「改名」的 API，所以只能重新加载插件让它们重新注册一次。
+   */
+  async setLanguage(value: LanguageSetting): Promise<void> {
+    this.settings.language = value;
+    await this.persistSettings();
+    applyLanguage(value);
+    new Notice(t("notice.languageChanged"));
+    const ok = await this.reloadPlugin();
+    if (!ok) new Notice(t("notice.reloadFailed"), 8000);
+  }
+
+  /**
+   * 重新加载本插件。
+   *
+   * `app.plugins` 不是公开 API，但这是社区通行的做法（官方至今没有替代方案）。
+   * 拿不到就返回 false，由调用方提示用户手动开关一次。
+   */
+  private async reloadPlugin(): Promise<boolean> {
+    const manager = (
+      this.app as unknown as {
+        plugins?: {
+          disablePlugin?: (id: string) => Promise<void>;
+          enablePlugin?: (id: string) => Promise<void>;
+        };
+      }
+    ).plugins;
+    if (!manager?.disablePlugin || !manager?.enablePlugin) return false;
+    try {
+      const id = this.manifest.id;
+      await manager.disablePlugin(id);
+      await manager.enablePlugin(id);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // ------------------------------------------------------------------
@@ -151,8 +200,8 @@ export default class LatestArrivalsPlugin extends Plugin {
     if (!ok) {
       new Notice(
         item.unindexed
-          ? `《${item.name}》还没被 Obsidian 索引。插件已经记录了它的入库时间，重启 Obsidian 后就能正常打开。`
-          : `找不到文件：${item.path}`,
+          ? t("notice.notIndexed", { name: item.name })
+          : t("notice.fileNotFound", { path: item.path }),
         6000,
       );
     }
@@ -161,44 +210,44 @@ export default class LatestArrivalsPlugin extends Plugin {
   showItemMenu(item: ArrivalItem, ev: MouseEvent): void {
     const menu = new Menu();
     menu.addItem((i) =>
-      i
-        .setTitle("打开")
-        .setIcon("file-text")
-        .onClick(() => void this.openItem(item)),
+      i.setTitle(t("menu.open")).setIcon("file-text").onClick(() => void this.openItem(item)),
     );
     menu.addItem((i) =>
       i
-        .setTitle("在新标签页打开")
+        .setTitle(t("menu.openInNewTab"))
         .setIcon("plus")
         .onClick(() => void this.openItem(item, { newTab: true })),
     );
     menu.addSeparator();
     menu.addItem((i) =>
       i
-        .setTitle("复制笔记链接")
+        .setTitle(t("menu.copyLink"))
         .setIcon("link")
-        .onClick(() => void copyText(`[[${item.name}]]`, "已复制 [[笔记链接]]")),
+        .onClick(() => void copyText(`[[${item.name}]]`, t("notice.copiedLink"))),
     );
     menu.addItem((i) =>
       i
-        .setTitle("复制文件路径")
+        .setTitle(t("menu.copyPath"))
         .setIcon("clipboard")
-        .onClick(() => void copyText(item.path, "已复制路径")),
+        .onClick(() => void copyText(item.path, t("notice.copiedPath"))),
     );
     menu.addSeparator();
     menu.addItem((i) =>
       i
-        .setTitle("从「最新入库」中忽略")
+        .setTitle(t("menu.ignore"))
         .setIcon("eye-off")
         .onClick(() => {
-          void this.service.ignore(item.path).then(async () => {
-            await this.persistSettings();
-            this.redrawViews();
-            new Notice(`已忽略《${item.name}》`);
-          });
+          void this.ignorePath(item.path, item.name);
         }),
     );
     menu.showAtMouseEvent(ev);
+  }
+
+  async ignorePath(path: string, name: string): Promise<void> {
+    await this.service.ignore(path);
+    await this.persistSettings();
+    this.redrawViews();
+    new Notice(t("notice.ignored", { name }));
   }
 
   async openFullView(): Promise<void> {
@@ -213,10 +262,8 @@ export default class LatestArrivalsPlugin extends Plugin {
    * `workspace-mobile.json`（该文件不被 Syncthing 同步，各设备独立），
    * 之后在侧边栏顶部点图标即可切换，不需要每次走命令面板。
    *
-   * 优先用 `workspace.ensureSideLeaf`（≥ 1.7.2，不会顶掉侧边栏里已有的视图）；
-   * 老版本上没有这个 API 时退化为「提示用户手动打开一次」，
-   * 而不是用 `getRightLeaf(false) + setViewState` —— 那样会把用户
-   * 侧边栏里原有的「反向链接」「出链」等标签页直接替换掉。
+   * 用 `workspace.ensureSideLeaf` 而不是 `getRightLeaf(false) + setViewState`：
+   * 后者会把用户侧边栏里原有的「反向链接」「出链」等标签页直接替换掉。
    */
   async ensureSidebarTab(opts: { reveal?: boolean } = {}): Promise<void> {
     const side: SidebarSide = this.settings.sidebarSide;
@@ -229,30 +276,14 @@ export default class LatestArrivalsPlugin extends Plugin {
       return;
     }
 
-    const withEnsure = ws as unknown as {
-      ensureSideLeaf?: (
-        type: string,
-        side: "left" | "right",
-        options?: { active?: boolean; reveal?: boolean; split?: boolean },
-      ) => Promise<WorkspaceLeaf>;
-    };
-
-    if (typeof withEnsure.ensureSideLeaf !== "function") {
-      new Notice(
-        "当前 Obsidian 版本不支持自动挂载侧边栏标签页，请用命令「打开完整列表」打开一次，之后它会常驻侧边栏。",
-        6000,
-      );
-      return;
-    }
-
     try {
-      const leaf = await withEnsure.ensureSideLeaf(LATEST_ARRIVALS_VIEW, side, {
+      const leaf = await ws.ensureSideLeaf(LATEST_ARRIVALS_VIEW, side, {
         active: false,
         reveal: opts.reveal === true,
       });
       if (opts.reveal && leaf) await ws.revealLeaf(leaf);
-    } catch (err) {
-      console.warn("[latest-arrivals] 挂载侧边栏标签页失败", err);
+    } catch {
+      new Notice(t("notice.sidebarUnsupported"), 6000);
     }
   }
 
@@ -261,7 +292,7 @@ export default class LatestArrivalsPlugin extends Plugin {
     for (const leaf of this.app.workspace.getLeavesOfType(LATEST_ARRIVALS_VIEW)) {
       leaf.detach();
     }
-    new Notice("已从侧边栏移除「最新入库」标签页");
+    new Notice(t("notice.sidebarTabRemoved"));
   }
 
   async openQuickList(): Promise<void> {
@@ -277,21 +308,21 @@ export default class LatestArrivalsPlugin extends Plugin {
   private registerAllCommands(): void {
     this.addCommand({
       id: "open-quick-list",
-      name: "打开最新入库列表",
+      name: t("command.openQuickList"),
       icon: "history",
       callback: () => void this.openQuickList(),
     });
 
     this.addCommand({
       id: "open-full-view",
-      name: "在侧边栏打开完整列表（含排序）",
+      name: t("command.openFullView"),
       icon: "list",
       callback: () => void this.openFullView(),
     });
 
     this.addCommand({
       id: "toggle-sidebar-tab",
-      name: "在侧边栏显示/隐藏「最新入库」标签页",
+      name: t("command.toggleSidebarTab"),
       icon: "panel-right",
       callback: () => {
         if (this.app.workspace.getLeavesOfType(LATEST_ARRIVALS_VIEW).length > 0) {
@@ -304,7 +335,7 @@ export default class LatestArrivalsPlugin extends Plugin {
 
     this.addCommand({
       id: "rescan",
-      name: "立即重新扫描",
+      name: t("command.rescan"),
       icon: "refresh-cw",
       callback: () => {
         void (async () => {
@@ -312,8 +343,8 @@ export default class LatestArrivalsPlugin extends Plugin {
           this.redrawViews();
           new Notice(
             s.newCount > 0
-              ? `发现 ${s.newCount} 篇新入库笔记`
-              : `没有新笔记（扫描 ${s.indexed} 篇 · ${s.durationMs} ms）`,
+              ? t("notice.foundNew", { count: s.newCount })
+              : t("notice.noneNew", { count: s.indexed, ms: s.durationMs }),
           );
         })();
       },
@@ -321,36 +352,32 @@ export default class LatestArrivalsPlugin extends Plugin {
 
     this.addCommand({
       id: "open-latest-in-tabs",
-      name: "在新标签页打开最新入库的若干篇",
+      name: t("command.openLatestInTabs"),
       icon: "files",
       callback: () => {
         void (async () => {
           const items = this.service.latest(this.settings.quickCount);
           if (items.length === 0) {
-            new Notice("台账里还没有笔记");
+            new Notice(t("notice.noNotes"));
             return;
           }
           for (const it of items) {
             await this.openItem(it, { newTab: true });
           }
-          new Notice(`已打开 ${items.length} 篇`);
+          new Notice(t("notice.openedCount", { count: items.length }));
         })();
       },
     });
 
     this.addCommand({
       id: "ignore-current",
-      name: "忽略当前笔记（从最新入库中移除）",
+      name: t("command.ignoreCurrent"),
       icon: "eye-off",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file) return false;
         if (!checking) {
-          void this.service.ignore(file.path).then(async () => {
-            await this.persistSettings();
-            this.redrawViews();
-            new Notice(`已忽略《${file.basename}》`);
-          });
+          void this.ignorePath(file.path, file.basename);
         }
         return true;
       },
@@ -358,14 +385,14 @@ export default class LatestArrivalsPlugin extends Plugin {
 
     this.addCommand({
       id: "rebuild-ledger",
-      name: "重建到货台账",
+      name: t("command.rebuildLedger"),
       icon: "database",
       callback: () => {
         void (async () => {
           this.rebuildLedger();
           await this.service.refresh({ deep: true });
           this.redrawViews();
-          new Notice("已重建到货台账");
+          new Notice(t("notice.ledgerRebuilt"));
         })();
       },
     });
@@ -375,20 +402,15 @@ export default class LatestArrivalsPlugin extends Plugin {
         if (!(file instanceof TFile) || file.extension !== "md") return;
         menu.addItem((i) =>
           i
-            .setTitle("打开「最新入库」列表")
+            .setTitle(t("menu.openList"))
             .setIcon("history")
             .onClick(() => void this.openQuickList()),
         );
         menu.addItem((i) =>
           i
-            .setTitle("从「最新入库」中忽略")
+            .setTitle(t("menu.ignore"))
             .setIcon("eye-off")
-            .onClick(() => {
-              void this.service.ignore(file.path).then(async () => {
-                await this.persistSettings();
-                this.redrawViews();
-              });
-            }),
+            .onClick(() => void this.ignorePath(file.path, file.basename)),
         );
       }),
     );
@@ -396,8 +418,8 @@ export default class LatestArrivalsPlugin extends Plugin {
 
   private registerVaultEvents(): void {
     const schedule = () => {
-      if (this.eventTimer) clearTimeout(this.eventTimer);
-      this.eventTimer = setTimeout(() => {
+      if (this.eventTimer !== null) window.clearTimeout(this.eventTimer);
+      this.eventTimer = window.setTimeout(() => {
         this.eventTimer = null;
         void this.refresh(false);
       }, EVENT_DEBOUNCE_MS);
@@ -421,6 +443,6 @@ async function copyText(text: string, okMessage: string): Promise<void> {
     await navigator.clipboard.writeText(text);
     new Notice(okMessage);
   } catch {
-    new Notice("复制失败：" + text);
+    new Notice(t("notice.copyFailed", { text }));
   }
 }

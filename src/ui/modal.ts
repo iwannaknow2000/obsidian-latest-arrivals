@@ -3,6 +3,7 @@ import type { ArrivalItem } from "../types";
 import type { ArrivalsService } from "../service";
 import { renderEmpty, renderRow } from "./row";
 import { formatDateTime } from "../format";
+import { t } from "../i18n";
 
 export interface QuickModalHost {
   service: ArrivalsService;
@@ -38,16 +39,16 @@ export class LatestArrivalsModal extends Modal {
 
     const header = contentEl.createDiv({ cls: "la-modal-header" });
     const titleWrap = header.createDiv({ cls: "la-modal-title-wrap" });
-    titleWrap.createDiv({ cls: "la-modal-title", text: "最新入库" });
+    titleWrap.createDiv({ cls: "la-modal-title", text: t("plugin.name") });
     titleWrap.createDiv({
       cls: "la-modal-subtitle",
-      text: `最近 ${items.length} 篇 · 本库共 ${total} 篇笔记`,
+      text: t("modal.subtitle", { shown: items.length, total }),
     });
 
     const actions = header.createDiv({ cls: "la-modal-actions" });
     const fullBtn = actions.createEl("button", { cls: "la-icon-btn" });
     setIcon(fullBtn, "list");
-    fullBtn.setAttr("aria-label", "打开完整列表（含排序）");
+    fullBtn.setAttr("aria-label", t("modal.openFullList"));
     fullBtn.addEventListener("click", () => {
       void this.host.openFullView();
       this.close();
@@ -55,7 +56,7 @@ export class LatestArrivalsModal extends Modal {
 
     const refreshBtn = actions.createEl("button", { cls: "la-icon-btn" });
     setIcon(refreshBtn, "refresh-cw");
-    refreshBtn.setAttr("aria-label", "重新扫描");
+    refreshBtn.setAttr("aria-label", t("modal.rescan"));
     refreshBtn.addEventListener("click", () => {
       void (async () => {
         refreshBtn.addClass("is-spinning");
@@ -63,8 +64,8 @@ export class LatestArrivalsModal extends Modal {
         refreshBtn.removeClass("is-spinning");
         new Notice(
           s.newCount > 0
-            ? `发现 ${s.newCount} 篇新入库笔记（${s.durationMs} ms）`
-            : `没有新的入库笔记（扫描 ${s.indexed} 篇 · ${s.durationMs} ms）`,
+            ? t("modal.scannedNew", { count: s.newCount, ms: s.durationMs })
+            : t("modal.scannedNone", { count: s.indexed, ms: s.durationMs }),
         );
         this.onOpen();
       })();
@@ -72,10 +73,7 @@ export class LatestArrivalsModal extends Modal {
 
     const list = contentEl.createDiv({ cls: "la-list" });
     if (items.length === 0) {
-      renderEmpty(
-        list,
-        "台账里还没有笔记。点右上角 ↻ 立即扫描一次；若日志很多，说明插件刚启用，正在建立基线。",
-      );
+      renderEmpty(list, t("modal.empty"));
       return;
     }
 
@@ -90,14 +88,11 @@ export class LatestArrivalsModal extends Modal {
     }
 
     const footer = contentEl.createDiv({ cls: "la-modal-footer" });
-    footer.createSpan({
-      cls: "la-footer-hint",
-      text: "点击打开 · 长按出菜单 · 入库时间为「本机首次发现」时刻",
-    });
+    footer.createSpan({ cls: "la-footer-hint", text: t("modal.footerHint") });
     if (items[0]) {
       footer.createSpan({
         cls: "la-footer-stamp",
-        text: `最近一篇 ${formatDateTime(items[0].firstSeen)}`,
+        text: t("modal.footerStamp", { time: formatDateTime(items[0].firstSeen) }),
       });
     }
   }

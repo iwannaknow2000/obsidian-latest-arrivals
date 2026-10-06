@@ -2,7 +2,8 @@ import { ItemView, setIcon, WorkspaceLeaf } from "obsidian";
 import type { ArrivalsService } from "../service";
 import { groupLetter } from "../pinyin";
 import { renderEmpty, renderRow } from "./row";
-import { SORT_KEY_LABELS, type ArrivalItem, type SortKey } from "../types";
+import { t } from "../i18n";
+import { SORT_KEYS, type ArrivalItem, type SortKey } from "../types";
 
 export const LATEST_ARRIVALS_VIEW = "latest-arrivals-view";
 
@@ -34,7 +35,7 @@ export class LatestArrivalsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "最新入库";
+    return t("view.title");
   }
 
   getIcon(): string {
@@ -61,8 +62,8 @@ export class LatestArrivalsView extends ItemView {
     const bar = root.createDiv({ cls: "la-toolbar" });
 
     const select = bar.createEl("select", { cls: "dropdown la-sort-select" });
-    for (const k of Object.keys(SORT_KEY_LABELS) as SortKey[]) {
-      const opt = select.createEl("option", { text: SORT_KEY_LABELS[k] });
+    for (const k of SORT_KEYS) {
+      const opt = select.createEl("option", { text: t(`sort.${k}`) });
       opt.value = k;
       if (k === key) opt.selected = true;
     }
@@ -73,7 +74,7 @@ export class LatestArrivalsView extends ItemView {
 
     const dirBtn = bar.createEl("button", { cls: "la-icon-btn" });
     setIcon(dirBtn, desc ? "arrow-down" : "arrow-up");
-    dirBtn.setAttr("aria-label", desc ? "当前：降序（点击改升序）" : "当前：升序（点击改降序）");
+    dirBtn.setAttr("aria-label", desc ? t("view.sortDesc") : t("view.sortAsc"));
     dirBtn.addEventListener("click", () => {
       this.host.setSort({ desc: !desc });
       this.render();
@@ -83,7 +84,7 @@ export class LatestArrivalsView extends ItemView {
       const groupBtn = bar.createEl("button", { cls: "la-icon-btn" });
       setIcon(groupBtn, "list-tree");
       groupBtn.toggleClass("is-active", group);
-      groupBtn.setAttr("aria-label", group ? "隐藏首字母分组" : "显示首字母分组");
+      groupBtn.setAttr("aria-label", group ? t("view.groupHide") : t("view.groupShow"));
       groupBtn.addEventListener("click", () => {
         this.host.setSort({ group: !group });
         this.render();
@@ -92,7 +93,7 @@ export class LatestArrivalsView extends ItemView {
 
     const refreshBtn = bar.createEl("button", { cls: "la-icon-btn" });
     setIcon(refreshBtn, "refresh-cw");
-    refreshBtn.setAttr("aria-label", "重新扫描");
+    refreshBtn.setAttr("aria-label", t("modal.rescan"));
     refreshBtn.addEventListener("click", () => {
       void (async () => {
         refreshBtn.addClass("is-spinning");
@@ -104,7 +105,7 @@ export class LatestArrivalsView extends ItemView {
 
     const search = root.createEl("input", {
       cls: "la-search",
-      attr: { type: "search", placeholder: "过滤标题或路径…" },
+      attr: { type: "search", placeholder: t("view.filterPlaceholder") },
     });
     search.value = this.query;
     search.addEventListener("input", () => {
@@ -120,8 +121,11 @@ export class LatestArrivalsView extends ItemView {
     const items = this.filteredItems();
     stat.setText(
       this.query
-        ? `匹配 ${items.length} / ${this.host.service.items.length} 篇`
-        : `共 ${items.length} 篇笔记`,
+        ? t("view.countFiltered", {
+            shown: items.length,
+            total: this.host.service.items.length,
+          })
+        : t("view.countAll", { total: items.length }),
     );
     this.renderList(listWrap, items);
   }
@@ -132,8 +136,7 @@ export class LatestArrivalsView extends ItemView {
     const q = this.query.trim().toLowerCase();
     if (!q) return sorted;
     return sorted.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) || i.path.toLowerCase().includes(q),
+      (i) => i.name.toLowerCase().includes(q) || i.path.toLowerCase().includes(q),
     );
   }
 
@@ -144,12 +147,7 @@ export class LatestArrivalsView extends ItemView {
     const now = Date.now();
 
     if (items.length === 0) {
-      renderEmpty(
-        container,
-        this.query
-          ? "没有匹配的笔记。"
-          : "台账还是空的。点 ↻ 立即扫描；插件首次启用时会用文件属性回填入库时间。",
-      );
+      renderEmpty(container, this.query ? t("view.emptyFiltered") : t("view.emptyLedger"));
       return;
     }
 

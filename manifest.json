@@ -1,9 +1,9 @@
 {
   "id": "latest-arrivals",
-  "name": "最新入库 (Latest Arrivals)",
-  "version": "1.1.1",
-  "minAppVersion": "1.5.0",
-  "description": "找出通过 Syncthing 等第三方工具最新同步到本机的笔记，支持按入库/创建/修改时间、大小、拼音首字母排序。",
+  "name": "Latest Arrivals",
+  "version": "1.2.0",
+  "minAppVersion": "1.8.7",
+  "description": "Find notes that were most recently synced into your vault by Syncthing or other third-party tools, and open them in one tap. Sort by arrival, created or modified time, size, or pinyin initials.",
   "author": "iwannaknow2000",
   "authorUrl": "https://github.com/iwannaknow2000",
   "isDesktopOnly": false

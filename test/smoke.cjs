@@ -143,12 +143,13 @@ obsidian.setApp(app);
   ok("注册了打开快速列表命令", ids.includes("open-quick-list"));
   ok("注册了侧边栏标签页开关命令", ids.includes("toggle-sidebar-tab"));
   ok("注册了视图", Object.keys(plugin.views).includes("latest-arrivals-view"));
-  ok("注册了功能区图标", plugin.ribbons.some((r) => r.title === "最新入库"));
+  ok("注册了功能区图标", plugin.ribbons.some((r) => r.icon === "history" && r.title.length > 0),
+    JSON.stringify(plugin.ribbons));
 
   // ---- 侧边栏标签页 ----
   const sideLeaves = leaves.filter((l) => l.viewType === "latest-arrivals-view");
   ok("启动时自动挂载了侧边栏标签页", sideLeaves.length === 1);
-  ok("侧边栏标签页默认挂在右侧", sideLeaves[0] && sideLeaves[0].side === "right");
+  ok("侧边栏标签页默认挂在左侧（那里才是移动端的视图列表）", sideLeaves[0] && sideLeaves[0].side === "left", `实际 ${sideLeaves[0] && sideLeaves[0].side}`);
   ok("侧边栏标签页不抢焦点", sideLeaves[0] && sideLeaves[0].active === false);
 
   // 关闭再打开

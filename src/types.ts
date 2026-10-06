@@ -1,18 +1,22 @@
+import type { LanguageSetting } from "./i18n";
+
 /** 排序键：入库时间 / 拼音首字母 / 创建时间 / 修改时间 / 笔记大小 */
 export type SortKey = "arrival" | "pinyin" | "ctime" | "mtime" | "size";
 
-export const SORT_KEY_LABELS: Record<SortKey, string> = {
-  arrival: "入库时间（本机首次发现）",
-  pinyin: "文件名（拼音首字母）",
-  ctime: "创建时间（文件属性 ctime）",
-  mtime: "修改时间（文件属性 mtime）",
-  size: "笔记大小",
-};
+export const SORT_KEYS: readonly SortKey[] = [
+  "arrival",
+  "pinyin",
+  "ctime",
+  "mtime",
+  "size",
+];
 
 /** 侧边栏标签页位置 */
 export type SidebarSide = "off" | "left" | "right";
 
 export interface LatestArrivalsSettings {
+  /** 界面语言：auto = 跟随 Obsidian */
+  language: LanguageSetting;
   /** 「最新入库」快速列表显示条数，1–10 */
   quickCount: number;
   /** 列表默认排序键 */
@@ -32,9 +36,10 @@ export interface LatestArrivalsSettings {
   /**
    * 侧边栏标签页位置。
    *
-   * 移动端把「最新入库」做成侧边栏标签页，打开一次之后 Obsidian 会把它记在
-   * `workspace-mobile.json` 里（该文件不被 Syncthing 同步），
-   * 以后在侧边栏顶部点一下图标就能直接切换，比功能区图标更省事。
+   * 默认放左侧：移动端左侧抽屉底部会列出该侧边栏的所有标签页
+   * （文件列表 / 搜索 / 标签 / 书签 …），挂到左侧就能和它们并排出现。
+   * 打开一次之后 Obsidian 会把它记在 `workspace-mobile.json` 里
+   * （该文件不被 Syncthing 同步），之后一点图标即可切换。
    */
   sidebarSide: SidebarSide;
   /** 排除路径的正则，每行一条 */
@@ -44,6 +49,7 @@ export interface LatestArrivalsSettings {
 }
 
 export const DEFAULT_SETTINGS: LatestArrivalsSettings = {
+  language: "auto",
   quickCount: 5,
   sortKey: "arrival",
   sortDesc: true,
@@ -52,7 +58,7 @@ export const DEFAULT_SETTINGS: LatestArrivalsSettings = {
   deepScanIntervalSec: 180,
   rescanOnForeground: true,
   openIn: "current",
-  sidebarSide: "right",
+  sidebarSide: "left",
   excludePatterns: "",
   ignoredPaths: [],
 };

@@ -214,6 +214,7 @@ function normalizePath(p) {
 const moment = (ts) => ({
   format: () => new Date(ts).toISOString(),
   fromNow: () => "刚刚",
+  locale: () => moment(ts),
 });
 const Platform = { isMobile: true, isDesktopApp: false, isMobileApp: true };
 

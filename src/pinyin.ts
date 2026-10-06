@@ -76,11 +76,10 @@ export type PinyinMode = "collator" | "fallback";
 
 export interface PinyinSupport {
   mode: PinyinMode;
-  /** 具体使用的 locale，便于诊断面板展示 */
+  /** 具体命中的 locale，便于诊断面板展示 */
   locale: string;
   /** 是否内置 ICU 中文排序可用 */
   ok: boolean;
-  detail: string;
 }
 
 function makeCollator(locale: string): Intl.Collator | null {
@@ -104,7 +103,7 @@ let detecting = false;
 export function detectPinyinSupport(): PinyinSupport {
   if (support) return support;
   if (detecting) {
-    return { mode: collator ? "collator" : "fallback", locale: "", ok: !!collator, detail: "检测中" };
+    return { mode: collator ? "collator" : "fallback", locale: "", ok: !!collator };
   }
 
   detecting = true;
@@ -132,12 +131,7 @@ export function detectPinyinSupport(): PinyinSupport {
         continue;
       }
 
-      support = {
-        mode: "collator",
-        locale,
-        ok: true,
-        detail: `内置 ICU 中文排序可用（locale: ${locale}）`,
-      };
+      support = { mode: "collator", locale, ok: true };
       return support;
     }
   } finally {
@@ -145,12 +139,7 @@ export function detectPinyinSupport(): PinyinSupport {
   }
 
   collator = null;
-  support = {
-    mode: "fallback",
-    locale: "",
-    ok: false,
-    detail: "当前 WebView 缺少中文拼音排序数据，已降级为 Unicode 编码顺序（此时汉字不会按拼音排列）",
-  };
+  support = { mode: "fallback", locale: "", ok: false };
   return support;
 }
 
