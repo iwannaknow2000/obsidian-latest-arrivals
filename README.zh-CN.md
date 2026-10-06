@@ -22,85 +22,40 @@
 
 ---
 
-## 1. 为什么 Recently Added Files 抓不到 Syncthing 的笔记
+## 1. 为什么别的「最近入库」插件抓不到同步来的笔记
 
-读了那款插件的源码（`src/modules/recent-files/index.ts`），它的实现是：
+像 [Recently Added Files](https://github.com/Lemon695/obsidian-recently-added-files) 这类插件只监听 Obsidian 的
+`create` 事件，而且是在工作区就绪**之后**才注册。第三方同步工具写入文件时 Obsidian 通常处于关闭状态，
+这些文件由启动时的全库扫描发现，**不会触发任何事件**，于是被静默漏掉。
 
-```ts
-this.plugin.app.workspace.onLayoutReady(() => {
-    this.isInitialized = true;
-    this.registerFileEvents();   // 只监听 vault.on('create' | 'modify' | 'rename' | 'delete')
-});
-```
+本插件不依赖事件时机：每次刷新都做一次**全库集合差**。
 
-- 它**只依赖 Obsidian 的 `create` 事件**，并且把事件注册放在「布局就绪之后」，
-  等于主动丢弃了启动时那一轮全库扫描的结果。
-- 而 Syncthing 绝大多数时候是在 **Obsidian 关闭状态下**把文件写进 vault 的；
-  这些文件是在下次启动的**初始索引扫描**里被发现的，**根本不产生 `create` 事件**。
-- 结果：第三方同步进来的笔记永远不会出现在它的列表里。
-
-**结论：只要不依赖 Obsidian 的事件时机，问题就消失了。**
-
-> #### 与 Recently Added Files 的关系
->
-> 本项目**不是它的 fork**。我们只读了它的源码用于**定位问题根因**（上面那段分析），
-> 实现完全不同——本项目是「全库集合差 + 设备本地到货台账」，**没有一行代码来自该插件**，
-> 仓库也是全新的、不含原始仓库的任何代码或提交历史。
-> 在此致谢 [Lemon695/obsidian-recently-added-files](https://github.com/Lemon695/obsidian-recently-added-files)
-> 提供了问题定位的起点。
+> **与 Recently Added Files 的关系。** 本项目**不是 fork**，不含其任何代码。只读过它的源码用于定位上述根因，
+> 起点由其提供，在此致谢。
 
 ---
 
-## 2. 工作原理：设备本地「到货台账」
+## 2. 工作原理
 
-插件自己维护一张 **路径 → 首次被发现时间** 的表，每次刷新都做一次**全库集合差**，
-而不是等事件。关键在于这张表存在哪里：
+插件维护一张 **路径 → 首次发现时间** 的表。关键在于这张表放在哪里：
 
-| 存储位置 | 会被 Syncthing 同步吗 | 结论 |
+| 存放位置 | 会在设备间同步吗 | |
 |---|---|---|
-| `data.json`（插件目录） | ✅ 会 | ❌ Mac 与手机互相覆盖，还会产生 `sync-conflict` 副本 |
-| 知识库内任意文件 | ✅ 会 | ❌ 同上 |
-| **`App.saveLocalStorage()`** | ❌ **设备本地、按 vault 隔离** | ✅ **采用** |
+| 插件目录里的 `data.json` | 会 | ❌ 几台设备互相覆盖 |
+| **`App.saveLocalStorage()`** | **不会** | ✅ 设备本地、按 vault 隔离 |
 
-`saveLocalStorage` / `loadLocalStorage` 是 Obsidian 官方 API，注释写着
-*“Save vault-specific value to localStorage”*——数据存在 App 本地存储里，
-**不进 vault、不被同步**，正好符合「按设备记录到货时间」的语义。
+每次刷新：
 
-### 刷新流程
+1. **快路径** —— `vault.getMarkdownFiles()` 加内存里的 `TFile.stat`。零 IO，毫秒级。
+2. **深路径** —— 可选的递归 `adapter.list`，用于抓出 Obsidian 尚未索引的文件。
+3. **对账** —— 已知路径保留冻结的入库时间；消失的路径若有 `size` 与 `mtime` 完全相同的新路径出现，
+   判定为重命名并继承；其余视为新入库。
 
-```
-插件加载 / App 回到前台 / 文件事件（防抖 2s）/ 手动刷新
-        │
-        ▼
-  ① 快路径：app.vault.getMarkdownFiles() + 内存里的 TFile.stat   ← 零 IO，毫秒级
-  ② 深路径：adapter.list 递归遍历，抓 Obsidian 索引还没收录的 .md  ← 按间隔节流
-        │
-        ▼
-  与台账对账（纯同步、无 IO）
-   ├── 已知路径 → 保留冻结的 firstSeen
-   ├── 路径消失 + 出现同 (size,mtime) 的新路径 → 判定为重命名，继承原时间
-   └── 真正的新路径 → 判定为新到货，写入 firstSeen
-```
-
-### 三个时间口径
-
-| 口径 | 来源 | 说明 |
-|---|---|---|
-| **入库时间**（默认） | 台账 `firstSeen` | 这篇笔记**到达本机**的时间。不依赖文件属性，Syncthing 场景下唯一可靠 |
-| 创建时间 | `TFile.stat.ctime` | Android/Linux 上是 inode change time，需真机验证（见下） |
-| 修改时间 | `TFile.stat.mtime` | Syncthing **会保留源文件 mtime**，所以这实际是「你在电脑上写作的时间」 |
-| 笔记大小 | `TFile.stat.size` | 字节数 |
-
-### 为什么需要「到货窗口」兜底
-
-Syncthing 上游有一个专门的提交
-[`lib/fs: Ignore inode change time on Android`](https://github.com/syncthing/syncthing/commit/16ae1fbe5e77b682aff1c546fe20bf3904cd42df)，
-说明 **Android 上 `ctime` 的语义确实有坑**。因此新发现文件的入库时间算法是：
-
-- **首次启用（建基线）**：用 `max(ctime, mtime)` 回填，避免 762 篇笔记并列同一时刻；
-- **之后每轮**：若时间属性落在「上次扫描 → 现在」这个窗口内，就采用它
-  （这样同一批同步进来的多个文件能排出先后）；若明显偏旧，说明时间属性不可信，
-  直接记为本轮到货 —— **保证刚同步来的笔记一定排在列表最前面**。
+默认按入库时间排序，因为它是唯一不依赖文件属性的信号。第三方同步工具**会保留 `mtime`**，
+所以 `mtime` 实际表示「你在别处写作的时间」；而 `ctime` 在
+[Android 上不可靠](https://github.com/syncthing/syncthing/commit/16ae1fbe5e77b682aff1c546fe20bf3904cd42df)。
+因此新发现的文件会取 `max(ctime, mtime)`（若落在上次扫描至今的窗口内），否则记为「现在到达」——
+保证刚同步来的笔记永远排在最前。
 
 ---
 

@@ -1,7 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting, setIcon } from "obsidian";
 import type LatestArrivalsPlugin from "./main";
 import { detectPinyinSupport } from "./pinyin";
-import { formatBytes, formatDateTime } from "./format";
+import { formatDateTime } from "./format";
 import { LOCALES, t, type LanguageSetting } from "./i18n";
 import { SORT_KEYS, type SortKey } from "./types";
 import { pickFolders } from "./ui/folder-picker";
@@ -281,8 +281,9 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
   // 移动端入口引导
   // ------------------------------------------------------------------
   private renderMobileHint(containerEl: HTMLElement): void {
-    const box = containerEl.createDiv({ cls: "la-mobile-hint" });
-    const title = box.createDiv({ cls: "la-mobile-hint-title" });
+    // 折进可折叠块：需要时展开，不必让设置页一进来就是一大段说明
+    const box = containerEl.createEl("details", { cls: "la-mobile-hint" });
+    const title = box.createEl("summary", { cls: "la-mobile-hint-title" });
     setIcon(title.createSpan({ cls: "la-mobile-hint-icon" }), "smartphone");
     title.createSpan({ text: t("settings.mobile.title") });
 
@@ -351,54 +352,6 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
         : t("settings.diag.platformDesktop"),
     );
 
-    this.renderDiagnosticsTable(containerEl);
-    this.renderRawLedger(containerEl);
-
-    const hint = containerEl.createDiv({ cls: "la-diag-hint" });
-    setIcon(hint.createSpan({ cls: "la-diag-hint-icon" }), "info");
-    hint.createSpan({ text: t("settings.diag.feedback") });
   }
 
-  private renderDiagnosticsTable(containerEl: HTMLElement): void {
-    const items = this.plugin.service.sorted("arrival", true).slice(0, 10);
-    if (items.length === 0) return;
-
-    heading(containerEl, t("settings.diag.tableTitle"));
-    containerEl.createEl("p", {
-      cls: "setting-item-description",
-      text: t("settings.diag.tableDesc"),
-    });
-
-    const table = containerEl.createEl("table", { cls: "la-diag-table" });
-    const head = table.createEl("thead").createEl("tr");
-    for (const key of ["colNote", "colArrival", "colCtime", "colMtime", "colSize", "colPath"]) {
-      head.createEl("th", { text: t(`settings.diag.${key}`) });
-    }
-    const body = table.createEl("tbody");
-    for (const it of items) {
-      const tr = body.createEl("tr");
-      tr.createEl("td", { text: it.name });
-      tr.createEl("td", { text: formatDateTime(it.firstSeen) });
-      tr.createEl("td", { text: formatDateTime(it.ctime) });
-      tr.createEl("td", { text: formatDateTime(it.mtime) });
-      tr.createEl("td", { text: formatBytes(it.size) });
-      const pathCell = tr.createEl("td");
-      pathCell.setText(it.path);
-      pathCell.addClass("la-diag-path");
-    }
-  }
-
-  private renderRawLedger(containerEl: HTMLElement): void {
-    const sample = this.plugin.sampleLedger(8);
-    if (sample.length === 0) return;
-
-    const details = containerEl.createEl("details", { cls: "la-diag-details" });
-    details.createEl("summary", { text: t("settings.diag.rawTitle") });
-    const pre = details.createEl("pre", { cls: "la-diag-pre" });
-    pre.setText(
-      sample
-        .map((s) => `${formatDateTime(s.entry.first)}  ${s.entry.size}B  ${s.path}`)
-        .join("\n"),
-    );
-  }
 }

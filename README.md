@@ -24,88 +24,41 @@ its work.
 
 ---
 
-## 1. Why "Recently Added Files" plugins miss Syncthing notes
+## 1. Why other "recently added" plugins miss synced notes
 
-Reading the source of [Lemon695/obsidian-recently-added-files](https://github.com/Lemon695/obsidian-recently-added-files)
-shows the cause:
+Plugins such as [Recently Added Files](https://github.com/Lemon695/obsidian-recently-added-files) listen only to
+Obsidian's `create` event, and register that listener *after* the workspace is ready. Files written by an external
+sync tool arrive while Obsidian is closed, so they are picked up by the startup scan and **never fire an event**.
+They are silently missed.
 
-```ts
-this.plugin.app.workspace.onLayoutReady(() => {
-    this.isInitialized = true;
-    this.registerFileEvents();   // only listens to vault.on('create' | 'modify' | ...)
-});
-```
+This plugin does not depend on event timing: every refresh performs a **full-vault set difference**.
 
-- It relies **only on Obsidian's `create` event**, and it registers that listener *after* the workspace is ready,
-  which discards the results of the initial vault scan entirely.
-- Syncthing almost always writes files while Obsidian is **closed**. Those files are discovered during the next
-  startup scan and **never produce a `create` event**.
-- Result: notes synced in by a third-party tool never appear in its list.
-
-**Once you stop depending on Obsidian's event timing, the problem disappears.**
-
-> ### Relationship to Recently Added Files
->
-> This project is **not a fork**. Its source was read only to **diagnose the root cause** described above.
-> The implementation is completely different — a full-vault set difference plus a device-local arrival ledger —
-> and **contains no code from that plugin**. The repository is new and shares no history with it.
-> Credit to [Lemon695/obsidian-recently-added-files](https://github.com/Lemon695/obsidian-recently-added-files)
-> for the starting point of the diagnosis.
+> **Relationship to Recently Added Files.** This project is **not a fork** and contains no code from it. Its
+> source was read only to diagnose the cause above, and credit is due for that starting point.
 
 ---
 
-## 2. How it works: a device-local arrival ledger
+## 2. How it works
 
-The plugin keeps its own table of **path → first-observed time**, and on every refresh it performs a
-**full-vault set difference** instead of waiting for events. Where that table lives is the crux:
+The plugin keeps a table of **path → first-observed time**. Where that table lives is the crux:
 
-| Storage | Synced by Syncthing? | Verdict |
+| Storage | Synced between devices? | |
 |---|---|---|
-| `data.json` (plugin folder) | Yes | ❌ Computer and phone overwrite each other; produces `sync-conflict` copies |
-| Any file in the vault | Yes | ❌ Same problem |
-| **`App.saveLocalStorage()`** | **No — device-local, per vault** | ✅ **Used** |
+| `data.json` in the plugin folder | Yes | ❌ devices overwrite each other |
+| **`App.saveLocalStorage()`** | **No** | ✅ device-local, per vault |
 
-`App.saveLocalStorage` is an official Obsidian API. Its documentation says *"Save vault-specific value to
-localStorage"* — the data lives in the app's local storage, **never enters the vault, and is never synced**,
-which is exactly the semantics needed for "when did this arrive on *this* device".
+Every refresh:
 
-### Refresh flow
+1. **Fast path** — `vault.getMarkdownFiles()` plus in-memory `TFile.stat`. No I/O, milliseconds.
+2. **Deep path** — an optional recursive `adapter.list`, to catch files Obsidian has not indexed yet.
+3. **Reconcile** — known paths keep their frozen arrival time; a vanished path whose replacement has an identical
+   `size` and `mtime` is treated as a rename and inherits it; anything else is a new arrival.
 
-```
-Plugin load · app returns to foreground · file events (debounced 2 s) · manual refresh
-        │
-        ▼
-  ① Fast path: app.vault.getMarkdownFiles() + in-memory TFile.stat   ← no I/O, milliseconds
-  ② Deep path: recursive adapter.list to catch .md files Obsidian hasn't indexed yet
-        │
-        ▼
-  Reconcile against the ledger (synchronous, no I/O)
-   ├── known path      → keep the frozen firstSeen
-   ├── path vanished and a new path appears with identical (size, mtime)
-   │                   → treated as a rename, inherits the original arrival time
-   └── genuinely new path → recorded as a new arrival
-```
-
-### The three time attributes
-
-| Value | Source | Meaning |
-|---|---|---|
-| **Arrival time** (default) | Ledger `firstSeen` | When this note reached **this device**. Independent of file attributes — the only fully reliable signal for synced files. |
-| Created time | `TFile.stat.ctime` | On Android/Linux this is the inode change time. |
-| Modified time | `TFile.stat.mtime` | **Syncthing preserves the source mtime**, so this is really "when you wrote the note on your computer". |
-| Note size | `TFile.stat.size` | Bytes. |
-
-### Why the "arrival window" clamp exists
-
-Syncthing has a dedicated upstream commit,
-[`lib/fs: Ignore inode change time on Android`](https://github.com/syncthing/syncthing/commit/16ae1fbe5e77b682aff1c546fe20bf3904cd42df),
-because **`ctime` semantics on Android are unreliable**. So when a file is first discovered:
-
-- **First run (building the baseline):** `firstSeen` is backfilled from `max(ctime, mtime)` so that a vault of
-  thousands of notes doesn't all collapse onto one timestamp.
-- **Every run after that:** if the timestamps fall inside the window between the previous scan and now, they are
-  used (which preserves the real ordering within a batch). If they are clearly stale, the file is recorded as
-  arriving **now** — guaranteeing that a freshly synced note sorts to the top of the list.
+Arrival time is the default sort key because it is the only signal that does not depend on file attributes.
+An external sync tool **preserves `mtime`**, so `mtime` really means "when you wrote the note elsewhere", and
+`ctime` is [unreliable on Android](https://github.com/syncthing/syncthing/commit/16ae1fbe5e77b682aff1c546fe20bf3904cd42df).
+A newly discovered file therefore uses `max(ctime, mtime)` when that falls in the window since the last scan,
+and is otherwise recorded as arriving now — so a freshly synced note always sorts to the top.
 
 ---
 
