@@ -28,7 +28,9 @@ export default [
       "eslint.config.mjs",
     ],
   },
-  ...tseslint.configs.recommended,
+  // 用「类型检查版」规则集：官方目录的源码检查跑的就是这一套，
+  // 本地对齐后才能提前发现 no-unsafe-* 这类问题。
+  ...tseslint.configs.recommendedTypeChecked,
   ...obsidianmd.configs.recommended,
   {
     files: ["src/**/*.ts"],

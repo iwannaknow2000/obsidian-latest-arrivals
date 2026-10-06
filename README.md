@@ -255,7 +255,8 @@ This plugin is not listed there, so that button will never find an update for it
 npm install
 npm run dev          # watch build (writes main.js with an inline sourcemap)
 npm test             # 54 logic assertions + 29 runtime smoke assertions
-npm run lint         # official eslint-plugin-obsidianmd rule set
+npm run lint         # official rule set, with type-checked rules
+                     # (the directory's source-code review runs the same set)
 npm run build        # type-check + production build
 npm run release:dry  # show what a release would do, without changing anything
 npm run release      # bump version, commit, tag, push → CI builds and publishes
@@ -310,6 +311,10 @@ landing in device-local storage, incremental discovery, and ignoring.
   device-local storage), so each device keeps its own arrival times.
 - **Changing the language re-keys the ribbon item.** Obsidian builds a ribbon item's ID from its title, so
   switching the interface language can drop the plugin from a configured ribbon menu. Pick your language first.
+- **Settings do not appear in Obsidian's settings search.** The official lint suggests adopting
+  `getSettingDefinitions()`, the declarative settings API introduced in **Obsidian 1.13.0**. This plugin's
+  `minAppVersion` is **1.8.7**, and using a 1.13-only API would lock out every user on an older build, so it
+  deliberately keeps `display()`. The trade-off is recorded in `eslint.config.mjs`.
 
 ---
 
