@@ -3,14 +3,17 @@
 [![Release](https://img.shields.io/github/v/release/iwannaknow2000/obsidian-latest-arrivals?label=release)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/releases/latest)
 [![CI](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml/badge.svg)](https://github.com/iwannaknow2000/obsidian-latest-arrivals/actions/workflows/release.yml)
 
-**Find the notes that were most recently synced into your vault, and open them in one tap.**
+**Find the notes that most recently arrived in your vault, and open them in one tap.**
 
-Built for vaults kept in sync with Syncthing, Resilio, or any other third-party tool, and tuned for Android.
-It solves a specific, annoying problem: plugins that show "recently added files" rely on Obsidian's `create`
-event, so they never notice files that arrive while Obsidian is closed — which is exactly when Syncthing does
-its work.
+If you sync your vault to your phone with Syncthing, Resilio or anything similar, this answers a simple
+question: *which notes just arrived?* Note that it is not the same as Obsidian's own recent-files list, which
+remembers what you **opened** — this remembers what **arrived**.
 
-[中文说明 →](README.zh-CN.md)
+Built for synced vaults and tuned for Android. It exists because plugins that show "recently added files" rely
+on Obsidian's `create` event, so they never notice files that appear while Obsidian is closed — which is exactly
+when a sync tool does its work.
+
+[中文说明（更通俗的版本）→](README.zh-CN.md)
 
 | | |
 |---|---|
