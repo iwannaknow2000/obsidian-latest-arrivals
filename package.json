@@ -13,7 +13,8 @@
     "test:smoke": "node test/smoke.cjs",
     "deploy": "node scripts/deploy.mjs",
     "publish:gh": "node scripts/publish.mjs",
-    "release": "npm version patch --no-git-tag-version && node scripts/sync-version.mjs && git add -A && git commit -m \"release: v$(node -p \"require('./manifest.json').version\")\" && node scripts/publish.mjs"
+    "release": "node scripts/release.mjs",
+    "release:dry": "node scripts/release.mjs --dry-run"
   },
   "keywords": [
     "obsidian",
