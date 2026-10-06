@@ -1,4 +1,4 @@
-import { Menu, Notice, Platform, Plugin, TFile } from "obsidian";
+import { Menu, Notice, Platform, Plugin, TFile, type WorkspaceLeaf } from "obsidian";
 import { ArrivalLedger, LocalStore } from "./ledger";
 import { ArrivalsService } from "./service";
 import { LatestArrivalsSettingTab } from "./settings";
@@ -64,8 +64,8 @@ export default class LatestArrivalsPlugin extends Plugin {
     this.registerVaultEvents();
 
     this.app.workspace.onLayoutReady(() => {
-      // 先把侧边栏标签页挂上去，让用户一眼就能看到入口
-      void this.ensureSidebarTab();
+      // 先把侧边栏标签页摆到正确的一侧，让用户一眼就能看到入口
+      void this.applySidebarSide();
       void this.refresh(false).then(() => {
         const s = this.service.lastSummary;
         if (s && s.newCount > 0) {
@@ -251,16 +251,62 @@ export default class LatestArrivalsPlugin extends Plugin {
   }
 
   async openFullView(): Promise<void> {
-    await this.ensureSidebarTab({ reveal: true });
+    await this.applySidebarSide({ reveal: true });
     this.redrawViews();
+  }
+
+  /**
+   * 判断某个 leaf 当前落在哪一侧。
+   *
+   * 用于发现「设置写着左侧、实际却还留在右侧」的残留 —— 见 applySidebarSide。
+   */
+  private leafSide(leaf: WorkspaceLeaf): SidebarSide {
+    try {
+      const ws = this.app.workspace;
+      const root = leaf.getRoot();
+      if (root === ws.leftSplit) return "left";
+      if (root === ws.rightSplit) return "right";
+    } catch {
+      /* 极老版本没有 getRoot 时按「位置不明」处理 */
+    }
+    return "off";
+  }
+
+  /**
+   * 按当前设置把「最新入库」标签页摆到正确的一侧。
+   *
+   * 为什么需要这个：`ensureSidebarTab()` 只要发现已有 leaf 就直接返回，
+   * 于是把设置从「右侧」改成「左侧」时标签页根本不会搬家。
+   * 而 1.1.x 的默认值是「右侧」，从旧版本升上来的设备 data.json 里存着它，
+   * 新默认值覆盖不了 —— 标签页会一直卡在右侧边栏，用户在手机左侧抽屉的
+   * 视图列表里自然就看不到它。
+   */
+  async applySidebarSide(opts: { reveal?: boolean } = {}): Promise<void> {
+    const side: SidebarSide = this.settings.sidebarSide;
+    const ws = this.app.workspace;
+    const existing = ws.getLeavesOfType(LATEST_ARRIVALS_VIEW);
+
+    if (side === "off") {
+      for (const leaf of existing) leaf.detach();
+      return;
+    }
+
+    // 已经在正确的一侧：什么都不用做
+    if (existing.length > 0 && existing.every((leaf) => this.leafSide(leaf) === side)) {
+      if (opts.reveal) await ws.revealLeaf(existing[0]);
+      return;
+    }
+
+    // 否则先拆掉位置不对的，再重新挂到目标一侧
+    for (const leaf of existing) leaf.detach();
+    await this.ensureSidebarTab(opts);
   }
 
   /**
    * 在侧边栏挂一个「最新入库」标签页。
    *
-   * 这是移动端最省事的入口：标签页一旦打开，Obsidian 会把它写进
-   * `workspace-mobile.json`（该文件不被 Syncthing 同步，各设备独立），
-   * 之后在侧边栏顶部点图标即可切换，不需要每次走命令面板。
+   * 打开一次之后，Obsidian 会把它写进 `workspace-mobile.json`
+   * （该文件不被 Syncthing 同步，各设备独立），之后点图标即可切换。
    *
    * 用 `workspace.ensureSideLeaf` 而不是 `getRightLeaf(false) + setViewState`：
    * 后者会把用户侧边栏里原有的「反向链接」「出链」等标签页直接替换掉。

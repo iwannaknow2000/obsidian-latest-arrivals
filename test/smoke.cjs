@@ -85,6 +85,9 @@ const app = {
   },
   workspace: {
     activeLeaf: null,
+    leftSplit: { name: "leftSplit" },
+    rightSplit: { name: "rightSplit" },
+    rootSplit: { name: "rootSplit" },
     onLayoutReady: (cb) => cb(),
     on: () => ({}),
     getLeavesOfType: (type) => leaves.filter((l) => l.viewType === type && !l.detached),
@@ -157,6 +160,31 @@ obsidian.setApp(app);
   ok("关闭后侧边栏不再有该标签页", app.workspace.getLeavesOfType("latest-arrivals-view").length === 0);
   await plugin.ensureSidebarTab({ reveal: false });
   ok("可重新挂载侧边栏标签页", app.workspace.getLeavesOfType("latest-arrivals-view").length === 1);
+
+  // ---- 侧边栏搬家：模拟从旧版本升级（设置停在右侧、标签页也在右侧）----
+  for (const l of leaves) l.detach();
+  leaves.length = 0;
+  plugin.settings.sidebarSide = "left";
+  await app.workspace.ensureSideLeaf("latest-arrivals-view", "right", {});
+  ok(
+    "构造出「旧版遗留：标签页在右侧」的场景",
+    leaves.filter((l) => l.viewType === "latest-arrivals-view" && !l.detached && l.side === "right").length === 1,
+  );
+  await plugin.applySidebarSide({});
+  const moved = leaves.filter((l) => l.viewType === "latest-arrivals-view" && !l.detached);
+  ok("applySidebarSide 把标签页从右侧搬到了左侧", moved.length === 1 && moved[0].side === "left",
+    moved.map((l) => l.side).join(",") || "没有标签页");
+  ok("搬家后旧标签页已被拆除", app.workspace.getLeavesOfType("latest-arrivals-view").length === 1);
+
+  // 切到「不挂载」应该全部拆掉
+  plugin.settings.sidebarSide = "off";
+  await plugin.applySidebarSide({});
+  ok("设为「不挂载」后标签页被拆除",
+    app.workspace.getLeavesOfType("latest-arrivals-view").length === 0);
+
+  // 还原，后面的用例还依赖左侧标签页
+  plugin.settings.sidebarSide = "left";
+  await plugin.applySidebarSide({});
 
   // ---- 扫描 / 对账 ----
   const svc = plugin.service;

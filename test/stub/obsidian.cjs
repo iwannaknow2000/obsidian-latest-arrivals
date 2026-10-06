@@ -193,6 +193,12 @@ class WorkspaceLeaf {
     if (state.active) appRef.workspace.activeLeaf = this;
   }
   async openFile() {}
+  /** 归属的根：用于让插件判断标签页当前在哪一侧 */
+  getRoot() {
+    if (this.side === "right") return appRef.workspace.rightSplit;
+    if (this.side === "left") return appRef.workspace.leftSplit;
+    return appRef.workspace.rootSplit;
+  }
   detach() {
     this.detached = true;
     detachedLeaves.push(this);

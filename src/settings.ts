@@ -110,11 +110,9 @@ export class LatestArrivalsSettingTab extends PluginSettingTab {
             const side = v as "off" | "left" | "right";
             this.plugin.settings.sidebarSide = side;
             await this.plugin.persistSettings();
-            if (side === "off") {
-              this.plugin.closeSidebarTab();
-            } else {
-              await this.plugin.ensureSidebarTab({ reveal: true });
-            }
+            // 走 applySidebarSide 而不是 ensureSidebarTab：
+            // 后者发现已有标签页就会直接返回，导致从「右侧」改成「左侧」时不会搬家
+            await this.plugin.applySidebarSide({ reveal: true });
           }),
       );
 
