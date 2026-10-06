@@ -173,7 +173,21 @@ bundle has an identical key set and identical `{placeholder}` usage.
 
 ## 6. Installation
 
-### Option A — BRAT (one-tap updates)
+### First, check whether it is in the directory yet
+
+**Settings → Community plugins → Browse**, and search for `Latest Arrivals`.
+
+| Result | What to do |
+|---|---|
+| **You can find it** | Install it from there. This is the simplest way, and Obsidian will keep it updated for you. |
+| **You cannot find it** | It is still in review. Use one of the two methods below. |
+
+> **The review only needs to pass once.** After that the directory entry stays, and new releases reach users
+> through Obsidian's own updater — no BRAT, no manual copying.
+
+### While it is still in review — option A: BRAT
+
+BRAT installs a plugin straight from a GitHub repository and updates it for you.
 
 1. Install the **BRAT** community plugin (`obsidian42-brat`).
 2. Run **BRAT: Add a beta plugin for testing** from the command palette.
@@ -182,7 +196,12 @@ bundle has an identical key set and identical `{placeholder}` usage.
 
 To update later, run **BRAT: Check for updates to all beta plugins**.
 
-### Option B — manual copy
+> If BRAT says *"This does not seem to be an obsidian plugin"*, the download was blocked — usually GitHub rate
+> limiting. Turn off any VPN and try again, or use option B.
+
+### While it is still in review — option B: manual copy
+
+This needs no network access at all.
 
 1. Download `main.js`, `manifest.json`, and `styles.css` from the
    [latest release](https://github.com/iwannaknow2000/obsidian-latest-arrivals/releases/latest).
@@ -192,16 +211,16 @@ To update later, run **BRAT: Check for updates to all beta plugins**.
 > **Overwrite the three files; do not delete the folder** — `data.json` lives there. (And if you do delete it,
 > the settings backup described above restores your configuration.)
 
-### ⚠️ Obsidian's built-in "Check for updates" does nothing for this plugin
-
-**Settings → Community plugins → Check for updates** only compares against the **official plugin directory**.
-This plugin is not listed there, so that button will never find an update for it. This is by design, not a bug.
+### How updates work, by install method
 
 | Installed via | How to update |
 |---|---|
+| Official directory | **Settings → Community plugins → Check for updates** — works once listed |
 | BRAT | Settings → BRAT → **Check for updates to all beta plugins** |
 | Manual copy | Re-copy the three files and restart Obsidian |
-| Official directory (once listed) | The built-in **Check for updates** button |
+
+> Until the directory entry is approved, **the built-in "Check for updates" button cannot see this plugin** —
+> it only compares against the official directory. That is by design, not a fault.
 
 ---
 

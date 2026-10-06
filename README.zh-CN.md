@@ -62,31 +62,54 @@
 
 ## 怎么装
 
-### 方法一：BRAT（装一次，以后一键更新）
+### 先看一眼：现在能不能直接在 Obsidian 里搜到
 
-1. 在 Obsidian 的 **设置 → 第三方插件 → 浏览** 里搜 `BRAT`，安装并启用
+**设置 → 第三方插件 → 浏览**，搜 `Latest Arrivals`。
+
+| 结果 | 怎么办 |
+|---|---|
+| **搜得到** | 直接点安装。这是最省事的方法，以后 Obsidian 会自动帮你更新 |
+| **搜不到** | 说明还在官方审核中，用下面的方法一或方法二 |
+
+> **审核只需要通过一次。** 通过之后条目会一直在，以后的新版本会走 Obsidian 自己的更新通道 ——
+> 不用 BRAT，也不用手动复制。
+
+### 审核通过前 · 方法一：BRAT（装一次，以后一键更新）
+
+BRAT 是一个能从 GitHub 仓库直接安装并更新插件的工具。
+
+1. 在 Obsidian 里装社区插件 **BRAT**（`obsidian42-brat`），启用它
 2. 打开 BRAT 的设置，找到 **Add Beta Plugin**
 3. 填 `iwannaknow2000/obsidian-latest-arrivals`
 4. 点 **Add Plugin**，它会自动下载并启用
 
 以后更新：BRAT 设置里点 **Check for updates to all beta plugins**。
 
-> 如果 BRAT 报错说「不是 Obsidian 插件」，多半是网络问题（GitHub 接口被限流）。
-> 关掉 VPN 再试，或者过一小时再试，或者改用下面的方法二。
+> 如果 BRAT 报错说「不是 Obsidian 插件」，那是下载被拦了，通常是 GitHub 接口限流。
+> 关掉 VPN 再试，或者改用下面的方法二。
 
-### 方法二：手动复制（不依赖网络）
+### 审核通过前 · 方法二：手动复制（完全不依赖网络）
 
 1. 从 [最新版本](https://github.com/iwannaknow2000/obsidian-latest-arrivals/releases/latest)
    下载三个文件：`main.js`、`manifest.json`、`styles.css`
 2. 把它们放进你的仓库文件夹里的
-   `.obsidian/plugins/latest-arrivals/`（没有这个文件夹就自己建）
+   `.obsidian/plugins/latest-arrivals/`（没有这个文件夹就自己建一个）
 3. **完全退出 Obsidian 再重新打开**（在手机的多任务界面里划掉，光切到后台不够）
 4. 到 **设置 → 第三方插件** 里启用它
 
 > **覆盖更新时只替换这三个文件，不要删掉整个文件夹** ——
 > 你的设置存在同目录的 `data.json` 里。就算删了也不怕，插件会自动从本机备份恢复设置。
 
----
+### 三种装法分别怎么更新
+
+| 装的方式 | 怎么更新 |
+|---|---|
+| 官方插件市场 | **设置 → 第三方插件 → 检查更新** —— 上架后可用 |
+| BRAT | BRAT 设置里点 **Check for updates to all beta plugins** |
+| 手动复制 | 重新覆盖那三个文件，然后完全重启 Obsidian |
+
+> **在官方审核通过之前，Obsidian 自带的「检查更新」看不到这个插件** ——
+> 那个按钮只查询官方插件目录。这是设计如此，不是故障。
 
 ## 怎么用
 
